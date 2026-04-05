@@ -59,5 +59,15 @@ const MASTER_DATA = {
     items: {
         weapons: ["戦士の剣", "魔導の杖", "影縫いの短刀", "聖なる槌"],
         shields: ["鉄の盾", "聖騎士の盾", "魔力の籠手"]
+
+        // images/icons/all_icons.png 内の配置定義
+MASTER_DATA.spriteConfig = {
+    file: "images/icons/all_icons.png",
+    gridSize: 32, // 1キャラのサイズ
+    columns: 7,   // 生成された画像の横に並んでいる人数（画像を見て調整）
+    // 性別ごとの開始インデックス（0から数えて何番目か）
+    maleIndices: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+    femaleIndices: [14, 15, 16, 17, 18, 19, 20, 21, 22, 23] 
+};
     }
 };
