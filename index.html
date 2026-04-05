@@ -2,151 +2,139 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pixel Auto RPG - Character Creation</title>
+    <title>Pixel Auto RPG - Strategy Menu</title>
     <style>
-        body { background: #2c3e50; color: white; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; }
-        .container { display: flex; gap: 20px; padding: 20px; max-width: 1000px; }
-        .editor, .preview { background: #34495e; padding: 20px; border-radius: 10px; border: 2px solid #ecf0f1; }
-        .slot-container { display: flex; gap: 10px; margin-bottom: 20px; }
-        .slot { width: 50px; height: 50px; background: #2c3e50; border: 2px solid #7f8c8d; cursor: pointer; display: flex; align-items: center; justify-content: center; position: relative; }
-        .slot.active { border-color: #f1c40f; box-shadow: 0 0 10px #f1c40f; }
-        .slot img { max-width: 100%; max-height: 100%; }
-        .input-group { margin-bottom: 10px; }
-        input, select { width: 100%; padding: 8px; margin-top: 5px; border-radius: 4px; border: none; }
-        #canvas-container { position: relative; border: 1px solid #ccc; margin-top: 10px; cursor: crosshair; overflow: hidden; background: #000; }
-        canvas { display: block; max-width: 400px; }
-        .btn { background: #27ae60; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin-top: 10px; }
-        .btn:hover { background: #2ecc71; }
-        .preview-box { border: 2px dashed #95a5a6; width: 100px; height: 100px; margin-top: 10px; display: flex; align-items: center; justify-content: center; background: #2c3e50; }
-        #crop-preview { width: 80px; height: 80px; border: 1px solid #fff; }
+        body { background: #1a1a2e; color: #e0e0e0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; display: flex; flex-direction: column; align-items: center; }
+        .main-layout { display: grid; grid-template-columns: 250px 1fr 300px; gap: 20px; padding: 20px; width: 95%; max-width: 1400px; }
+        
+        /* スロット・パーティ一覧 */
+        .sidebar { background: #16213e; padding: 15px; border-radius: 10px; border: 1px solid #0f3460; }
+        .slot { display: flex; align-items: center; gap: 10px; padding: 10px; margin-bottom: 10px; background: #0f3460; border: 2px solid transparent; cursor: pointer; border-radius: 5px; }
+        .slot.active { border-color: #e94560; background: #1a1a2e; }
+        .slot-img { width: 40px; height: 40px; background: #333; border-radius: 3px; overflow: hidden; }
+        .slot-img img { width: 100%; height: 100%; object-fit: cover; }
+
+        /* キャラクター編集・ジョブ選択 */
+        .editor { background: #16213e; padding: 20px; border-radius: 10px; }
+        .job-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin: 15px 0; }
+        .job-card { border: 1px solid #444; padding: 5px; text-align: center; cursor: pointer; border-radius: 5px; font-size: 12px; }
+        .job-card:hover { border-color: #e94560; }
+        .job-card.selected { background: #e94560; color: white; border-color: #fff; }
+        
+        /* ガンビット・装備設定 */
+        .strategy { background: #16213e; padding: 20px; border-radius: 10px; }
+        .gambit-row { display: flex; gap: 5px; margin-bottom: 8px; font-size: 13px; }
+        select, input { background: #0f3460; color: white; border: 1px solid #444; padding: 5px; border-radius: 3px; }
+        
+        .btn-save { width: 100%; padding: 15px; background: #e94560; color: white; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; margin-top: 20px; }
+        .preview-area { text-align: center; margin-bottom: 20px; background: #000; padding: 10px; border-radius: 10px; border: 2px solid #e94560; }
+        
+        h3 { border-bottom: 2px solid #e94560; padding-bottom: 5px; margin-top: 0; }
+        label { font-size: 12px; color: #888; }
     </style>
 </head>
 <body>
 
-<h1>Pixel Auto RPG - キャラメイク</h1>
+<h1 style="color: #e94560;">PIXEL AUTO RPG - 準備画面</h1>
 
-<div class="slot-container" id="party-slots">
+<div class="main-layout">
+    <div class="sidebar">
+        <h3>PARTY</h3>
+        <div id="slots"></div>
+        <button class="btn-save" style="background:#27ae60;">ダンジョン出発！</button>
     </div>
 
-<div class="container">
     <div class="editor">
-        <h3>キャラクター編集</h3>
-        <div class="input-group">
-            <label>フルネーム</label>
-            <input type="text" id="full-name" placeholder="例：アルベルト・ハイゼンベルク">
+        <div class="preview-area">
+            <canvas id="main-preview" width="120" height="120"></canvas>
+            <p id="preview-name" style="font-weight:bold; margin:5px 0;">New Character</p>
         </div>
-        <div class="input-group">
-            <label>ニックネーム（戦闘表示用）</label>
-            <input type="text" id="nick-name" placeholder="例：アル">
+
+        <h3>BASIC INFO</h3>
+        <div style="display:flex; gap:10px;">
+            <div style="flex:1;"><label>名前</label><input type="text" id="name-input" oninput="updateUI()"></div>
+            <div style="flex:1;"><label>ニックネーム</label><input type="text" id="nick-input"></div>
         </div>
-        <div class="input-group">
-            <label>年齢 / 性別</label>
-            <div style="display:flex; gap:10px;">
-                <input type="number" id="age" value="20" style="width: 60px;">
-                <select id="gender"><option value="male">男</option><option value="female">女</option></select>
+
+        <h3>JOB SELECT (見た目)</h3>
+        <div class="job-grid" id="job-list">
             </div>
-        </div>
-        <div class="input-group">
-            <label>ジョブ（見た目）選択</label>
-            <select id="job-select">
-                <option value="1">ナイト</option><option value="2">魔道士</option>
-                <option value="3">シーフ</option><option value="4">武闘家</option>
-            </select>
-        </div>
-        <hr>
-        <div class="input-group">
-            <label>カスタムアイコン (PCから画像を選択)</label>
-            <input type="file" id="image-loader" accept="image/*">
-            <div id="canvas-container">
-                <canvas id="image-canvas"></canvas>
-            </div>
-            <p style="font-size:12px;">マウスでドラッグして切り抜き範囲を指定してください</p>
-        </div>
-        <button class="btn" onclick="saveCharacter()">このキャラを保存</button>
+
+        <h3>CUSTOM ICON</h3>
+        <input type="file" id="img-upload" accept="image/*">
+        <p style="font-size:11px;">※画像をクリックして顔を切り抜き</p>
+        <canvas id="crop-source" style="max-width:100%; border:1px solid #444; margin-top:5px;"></canvas>
     </div>
 
-    <div class="preview">
-        <h3>現在のアイコンプレビュー</h3>
-        <div class="preview-box">
-            <canvas id="crop-preview" width="80" height="80"></canvas>
+    <div class="strategy">
+        <h3>EQUIPMENT</h3>
+        <label>武器</label><select><option>鉄の剣</option><option>木の杖</option></select><br>
+        <label>防具</label><select><option>革の鎧</option><option>布の服</option></select>
+        
+        <h3 style="margin-top:20px;">GAMBIT (作戦)</h3>
+        <div id="gambit-list">
+            <div class="gambit-row"><span>1.</span><select><option>HP < 50%の味方</option><option>目の前の敵</option></select><select><option>ケアル</option><option>たたかう</option></select></div>
+            <div class="gambit-row"><span>2.</span><select><option>目の前の敵</option><option>最もHPが低い敵</option></select><select><option>たたかう</option><option>防御</option></select></div>
+            <div class="gambit-row"><span>3.</span><select><option>常時</option></select><select><option>防御</option></select></div>
         </div>
-        <p id="preview-info" style="font-size: 14px; margin-top:10px;">名前: ---<br>年齢: ---</p>
-        <button class="btn" style="background:#e67e22;" onclick="alert('ダンジョン出発機能は次回のアップデートで実装！')">ダンジョンへ出発！</button>
+        
+        <button class="btn-save" onclick="saveCurrent()">設定を保存</button>
     </div>
 </div>
 
 <script>
-    const canvas = document.getElementById('image-canvas');
-    const ctx = canvas.getContext('2d');
-    const cropPreview = document.getElementById('crop-preview');
-    const pCtx = cropPreview.getContext('2d');
-    const slotsContainer = document.getElementById('party-slots');
+    let currentId = 0;
+    const jobs = ["ナイト", "戦士", "シーフ", "黒魔道士", "白魔道士", "武闘家", "竜騎士", "忍者", "侍", "吟遊詩人", "狩人", "赤魔道士", "魔法戦士", "召喚士", "時魔道士", "踊り子", "薬師", "魔獣使い", "バイキング", "賢者"];
+    let party = Array(6).fill(null).map((_, i) => ({ id: i, name: `キャラ${i+1}`, nick: `C${i+1}`, job: "ナイト", icon: null }));
 
-    let img = new Image();
-    let cropX = 0, cropY = 0, cropSize = 100;
-    let party = Array(6).fill(null).map(() => ({ name: '', nick: '', age: 20, gender: 'male', icon: null }));
-    let currentSlot = 0;
+    function init() {
+        renderSlots();
+        renderJobList();
+        loadCharacter(0);
+    }
 
-    // スロットの生成
     function renderSlots() {
-        slotsContainer.innerHTML = '';
-        party.forEach((p, i) => {
-            const div = document.createElement('div');
-            div.className = `slot ${i === currentSlot ? 'active' : ''}`;
-            div.innerHTML = p.icon ? `<img src="${p.icon}">` : (i+1);
-            div.onclick = () => selectSlot(i);
-            slotsContainer.appendChild(div);
-        });
+        const container = document.getElementById('slots');
+        container.innerHTML = party.map((p, i) => `
+            <div class="slot ${i === currentId ? 'active' : ''}" onclick="loadCharacter(${i})">
+                <div class="slot-img">${p.icon ? `<img src="${p.icon}">` : ''}</div>
+                <div><div>${p.name}</div><small>${p.job}</small></div>
+            </div>
+        `).join('');
     }
 
-    function selectSlot(i) {
-        currentSlot = i;
+    function renderJobList() {
+        const list = document.getElementById('job-list');
+        list.innerHTML = jobs.map(j => `<div class="job-card" onclick="setJob('${j}')">${j}</div>`).join('');
+    }
+
+    function loadCharacter(id) {
+        currentId = id;
+        const p = party[id];
+        document.getElementById('name-input').value = p.name;
+        document.getElementById('nick-input').value = p.nick;
+        updateUI();
         renderSlots();
-        // ここで既存データを入力欄に戻す処理を後で追加
     }
 
-    // 画像読み込み
-    document.getElementById('image-loader').addEventListener('change', (e) => {
-        const reader = new FileReader();
-        reader.onload = (event) => {
-            img.onload = () => {
-                canvas.width = img.width;
-                canvas.height = img.height;
-                ctx.drawImage(img, 0, 0);
-                updateCrop();
-            };
-            img.src = event.target.result;
-        };
-        reader.readAsDataURL(e.target.files[0]);
-    });
-
-    // 簡易クロップ（中央付近を切り抜き）
-    canvas.onmousedown = (e) => {
-        const rect = canvas.getBoundingClientRect();
-        const scaleX = canvas.width / rect.width;
-        const scaleY = canvas.height / rect.height;
-        cropX = (e.clientX - rect.left) * scaleX - 40;
-        cropY = (e.clientY - rect.top) * scaleY - 40;
-        updateCrop();
-    };
-
-    function updateCrop() {
-        if (!img.src) return;
-        pCtx.clearRect(0, 0, 80, 80);
-        pCtx.drawImage(img, cropX, cropY, 100, 100, 0, 0, 80, 80);
+    function setJob(j) {
+        party[currentId].job = j;
+        updateUI();
     }
 
-    function saveCharacter() {
-        const name = document.getElementById('full-name').value;
-        const iconData = cropPreview.toDataURL();
-        party[currentSlot] = { name: name, icon: iconData };
-        document.getElementById('preview-info').innerHTML = `名前: ${name}<br>保存完了！`;
+    function updateUI() {
+        const name = document.getElementById('name-input').value;
+        document.getElementById('preview-name').innerText = `${name || '---'} [${party[currentId].job}]`;
+    }
+
+    function saveCurrent() {
+        party[currentId].name = document.getElementById('name-input').value;
+        party[currentId].nick = document.getElementById('nick-input').value;
         renderSlots();
-        alert('キャラクターを保存しました！');
+        alert("キャラクター設定を保存しました！");
     }
 
-    renderSlots();
+    init();
 </script>
 </body>
 </html>
