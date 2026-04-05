@@ -2,44 +2,40 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>Pixel Auto RPG - 直感キャラエディタ</title>
+    <title>Pixel Auto RPG - 確実に選べるキャラエディタ</title>
     <style>
         body { background: #0d1117; color: #c9d1d9; font-family: sans-serif; padding: 20px; display: flex; justify-content: center; }
         .container { width: 900px; display: grid; grid-template-columns: 400px 1fr; gap: 25px; background: #161b22; padding: 30px; border-radius: 15px; border: 1px solid #30363d; }
         
-        /* 左：キャラ選択エリア */
         .selection-pane { text-align: center; background: #0d1117; padding: 20px; border-radius: 10px; border: 1px solid #30363d; }
-        .main-preview { width: 128px; height: 128px; border: 4px solid #58a6ff; margin: 0 auto 20px; background: #21262d; overflow: hidden; position: relative; }
-        #selected-img { width: 100%; height: 100%; image-rendering: pixelated; object-fit: contain; }
+        /* メインの大きな表示窓 */
+        .main-preview-window { width: 128px; height: 128px; border: 4px solid #58a6ff; margin: 0 auto 20px; overflow: hidden; background: #21262d; position: relative; }
+        #selected-img { position: absolute; top: 0; left: 0; height: 128px; width: auto; image-rendering: pixelated; }
         
-        /* 20個のアイコンを並べるグリッド */
-        .icon-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-top: 15px; max-height: 200px; overflow-y: auto; padding: 5px; }
-        .icon-item { width: 50px; height: 50px; border: 2px solid #30363d; cursor: pointer; background: #21262d; image-rendering: pixelated; }
-        .icon-item:hover { border-color: #58a6ff; }
-        .icon-item.active { border-color: #f0883e; box-shadow: 0 0 10px #f0883e; }
+        /* 20個の選択肢（グリッド） */
+        .icon-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-top: 15px; background: #0d1117; padding: 10px; border-radius: 8px; }
+        .icon-btn { width: 60px; height: 60px; border: 2px solid #30363d; cursor: pointer; overflow: hidden; position: relative; background: #21262d; }
+        .icon-btn img { position: absolute; top: 0; height: 60px; width: auto; image-rendering: pixelated; pointer-events: none; }
+        .icon-btn:hover { border-color: #58a6ff; }
+        .icon-btn.active { border-color: #f0883e; box-shadow: 0 0 8px #f0883e; }
 
-        /* 右：プロフィール入力 */
         .input-pane { display: flex; flex-direction: column; gap: 15px; }
-        label { font-size: 13px; color: #8b949e; font-weight: bold; }
+        label { font-size: 13px; color: #8b949e; font-weight: bold; margin-bottom: 5px; display: block; }
         input, select, textarea { background: #0d1117; color: white; border: 1px solid #30363d; padding: 12px; border-radius: 6px; width: 100%; box-sizing: border-box; }
-        .save-btn { padding: 18px; background: #238636; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 16px; }
+        .save-btn { padding: 18px; background: #238636; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 16px; margin-top: 10px; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <div class="selection-pane">
-        <h3>1. 見た目をクリックで選択</h3>
-        <div class="main-preview">
+        <h3>1. 見た目を選んでください</h3>
+        <div class="main-preview-window">
             <img id="selected-img" src="all_icons.png">
         </div>
         
-        <div class="icon-grid" id="icon-grid">
+        <div class="icon-grid" id="grid-area">
             </div>
-
-        <hr style="border:0; border-top:1px solid #30363d; margin:20px 0;">
-        <label>自分の画像を使う</label>
-        <input type="file" accept="image/*" onchange="loadCustom(event)">
     </div>
 
     <div class="input-pane">
@@ -52,56 +48,52 @@
             <div><label>性別</label><select id="p-gender"><option>男</option><option>女</option></select></div>
             <div><label>年齢</label><input type="number" id="p-age" value="20"></div>
         </div>
-        <div><label>自己紹介</label><textarea id="p-bio" rows="6" placeholder="冒険の目的などを書いてください。"></textarea></div>
-        <button class="save-btn" onclick="saveData()">このキャラを保存する</button>
+        <div><label>自己紹介</label><textarea id="p-bio" rows="6" placeholder="冒険の目的を書いてください。"></textarea></div>
+        <button class="save-btn" onclick="saveCharacter()">このキャラで決定！</button>
     </div>
 </div>
 
 <script>
-    const grid = document.getElementById('icon-grid');
-    const mainView = document.getElementById('selected-img');
-    
-    // 20個の選択肢を作る
-    // 本来は20個の別々の画像があればベストですが、今の「all_icons.png」を
-    // 20個のボタンとして切り出して並べる処理を行います
-    for (let i = 0; i < 20; i++) {
-        const btn = document.createElement('div');
-        btn.className = 'icon-item';
-        // 各ボタンに「all_icons.png」の特定の部分を表示させる
-        btn.style.backgroundImage = 'url(all_icons.png)';
-        btn.style.backgroundSize = '2000% 100%'; // 20人分なので横幅を2000%に
-        btn.style.backgroundPosition = (i * (100/19)) + '% 0%'; 
+    const imgURL = "https://raw.githubusercontent.com/aamm08170324-spec/pixel-game/main/images/icons/all_icons.png";
+    const grid = document.getElementById('grid-area');
+    const mainImg = document.getElementById('selected-img');
+    mainImg.src = imgURL;
+
+    // 1キャラ分の幅を計算して、20個のボタンを作る
+    // 画像が読み込まれてからボタンを作ります
+    const tempImg = new Image();
+    tempImg.src = imgURL;
+    tempImg.onload = function() {
+        const charWidthActual = tempImg.naturalWidth / 20;
         
-        btn.onclick = () => {
-            // クリックしたやつをメイン画面に反映
-            mainView.src = 'all_icons.png';
-            mainView.style.objectFit = 'none';
-            // メイン画面の表示位置も調整
-            const zoom = 128 / (mainView.naturalHeight || 128);
-            mainView.style.width = 'auto';
-            mainView.style.height = '128px';
-            mainView.style.marginLeft = '-' + (i * (mainView.naturalWidth / 20) * (128 / mainView.naturalHeight)) + 'px';
+        for (let i = 0; i < 20; i++) {
+            const btn = document.createElement('div');
+            btn.className = 'icon-btn';
+            if (i === 0) btn.classList.add('active');
+
+            const btnImg = document.createElement('img');
+            btnImg.src = imgURL;
+            // ボタンの中で顔がピッタリ見えるように調整
+            const scale = 60 / tempImg.naturalHeight;
+            btnImg.style.left = `-${i * charWidthActual * scale}px`;
             
-            // アクティブ表示の切り替え
-            document.querySelectorAll('.icon-item').forEach(el => el.classList.remove('active'));
-            btn.classList.add('active');
-        };
-        grid.appendChild(btn);
-    }
+            btn.appendChild(btnImg);
+            
+            btn.onclick = () => {
+                // メイン画面の表示を切り替え
+                const mainScale = 128 / tempImg.naturalHeight;
+                mainImg.style.left = `-${i * charWidthActual * mainScale}px`;
+                
+                // 選択中の枠を更新
+                document.querySelectorAll('.icon-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+            };
+            grid.appendChild(btn);
+        }
+    };
 
-    function loadCustom(e) {
-        const reader = new FileReader();
-        reader.onload = (x) => {
-            mainView.src = x.target.result;
-            mainView.style.marginLeft = '0';
-            mainView.style.width = '100%';
-            mainView.style.objectFit = 'contain';
-        };
-        reader.readAsDataURL(e.target.files[0]);
-    }
-
-    function saveData() {
-        alert("キャラクターを保存しました！");
+    function saveCharacter() {
+        alert("キャラクターをブラウザに保存しました！");
     }
 </script>
 
