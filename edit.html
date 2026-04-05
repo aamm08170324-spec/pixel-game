@@ -2,159 +2,123 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>Pixel Auto RPG - Professional Editor</title>
-    <script src="masterData.js"></script>
+    <title>Pixel Auto RPG - 究極エディタ</title>
     <style>
-        body { background: #0d1117; color: #c9d1d9; font-family: sans-serif; margin: 0; display: flex; justify-content: center; }
-        .main-layout { display: grid; grid-template-columns: 260px 1fr 400px; gap: 15px; padding: 15px; width: 1200px; height: 95vh; }
-        .panel { background: #161b22; padding: 20px; border-radius: 8px; border: 1px solid #30363d; overflow-y: auto; }
+        body { background: #0d1117; color: #c9d1d9; font-family: sans-serif; padding: 20px; display: flex; justify-content: center; }
+        .container { width: 800px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; background: #161b22; padding: 30px; border-radius: 12px; border: 1px solid #30363d; }
         
-        /* プレビューアイコン */
-        .icon-preview { width: 64px; height: 64px; border: 2px solid #58a6ff; margin: 10px auto; background-size: cover; image-rendering: pixelated; }
+        /* プレビューエリア */
+        .preview-pane { text-align: center; background: #0d1117; padding: 20px; border-radius: 8px; border: 1px solid #30363d; }
+        .icon-window { width: 96px; height: 96px; border: 3px solid #58a6ff; margin: 0 auto 15px; overflow: hidden; background: #21262d; display: flex; align-items: center; justify-content: center; position: relative; }
+        #view-img { width: 100%; image-rendering: pixelated; transition: 0.1s; }
+
+        /* 入力エリア */
+        .input-pane { display: flex; flex-direction: column; gap: 12px; }
+        label { font-size: 12px; color: #8b949e; font-weight: bold; }
+        input, select, textarea { background: #0d1117; color: white; border: 1px solid #30363d; padding: 10px; border-radius: 6px; width: 100%; box-sizing: border-box; }
         
-        /* プリセットアイコン表示用 (CSSスプライト) */
-        .sprite-item {
-            width: 32px; height: 32px;
-            background-image: url('images/icons/all_icons.png');
-            background-repeat: no-repeat;
-            display: inline-block;
-            cursor: pointer;
-            border: 1px solid #30363d;
-            image-rendering: pixelated;
-        }
-        .sprite-item:hover { border-color: #58a6ff; }
-
-        /* モーダル */
-        .modal { display: none; position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); }
-        .modal-content { background: #161b22; margin: 10% auto; padding: 20px; border: 1px solid #58a6ff; width: 450px; border-radius: 10px; }
-        .icon-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; max-height: 300px; overflow-y: auto; padding: 10px; background: #0d1117; }
-
-        .btn { background: #238636; color: white; border: none; padding: 10px; border-radius: 6px; cursor: pointer; width: 100%; margin-top: 10px; }
-        .btn-outline { background: transparent; border: 1px solid #30363d; color: #58a6ff; }
-        .slot { display: flex; align-items: center; gap: 10px; padding: 10px; background: #21262d; margin-bottom: 5px; cursor: pointer; border-radius: 4px; }
-        .slot.active { border: 1px solid #58a6ff; background: #262c36; }
+        /* 切り抜き調整用スライダー */
+        .slider-group { background: #21262d; padding: 10px; border-radius: 6px; margin-top: 10px; }
+        .btn { padding: 12px; background: #238636; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; margin-top: 10px; }
+        .btn-sub { background: #21262d; border: 1px solid #30363d; color: #58a6ff; }
     </style>
 </head>
 <body>
 
-<div id="iconModal" class="modal">
-    <div class="modal-content">
+<div class="container">
+    <div class="preview-pane">
         <h3>見た目の設定</h3>
+        <div class="icon-window">
+            <img id="view-img" src="images/icons/all_icons.png" style="width: auto; height: 96px; position: absolute; left: 0;">
+        </div>
         
-        <p>1. プリセットから選ぶ</p>
-        <div id="preset-grid" class="icon-grid"></div>
+        <label>1. 画像を選択（端末から選ぶ）</label>
+        <input type="file" accept="image/*" onchange="loadFile(event)" style="margin-bottom:15px;">
 
-        <hr style="border:0; border-top:1px solid #30363d; margin:20px 0;">
-        
-        <p>2. 自分の端末から選ぶ</p>
-        <input type="file" id="file-input" accept="image/*" onchange="loadLocalFile(event)">
-        
-        <button class="btn btn-outline" onclick="closeModal()">キャンセル</button>
-    </div>
-</div>
-
-<div class="main-layout">
-    <div class="panel">
-        <h3>パーティ編成</h3>
-        <div id="party-list"></div>
-    </div>
-
-    <div class="panel" style="text-align: center;">
-        <div id="current-icon-display" class="icon-preview" style="zoom: 2;"></div>
-        <button class="btn-outline" onclick="openModal()" style="padding: 5px 15px;">見た目を変える</button>
-        
-        <div style="text-align: left; margin-top: 20px;">
-            <label>名前</label>
-            <input type="text" id="edit-name" style="width:100%; padding:8px; background:#0d1117; color:white; border:1px solid #30363d;" oninput="updateData()">
+        <div class="slider-group">
+            <label>2. 範囲設定（左右にずらす）</label>
+            <input type="range" id="x-range" min="0" max="1000" value="0" oninput="moveIcon()">
+            <p style="font-size:11px; margin-top:5px;">※20人画像(all_icons.png)を使っている時は、これでキャラを切り替えられます</p>
         </div>
     </div>
 
-    <div class="panel">
-        <h3>ステータス</h3>
-        <p>※ここは次のステップで実装します</p>
+    <div class="input-pane">
+        <h3>プロフィール設定</h3>
+        
+        <div><label>名前</label><input type="text" id="p-name" placeholder="勇者あきひさ"></div>
+        <div><label>ニックネーム</label><input type="text" id="p-nick" placeholder="伝説の主導者"></div>
+        
+        <div style="display:flex; gap:10px;">
+            <div style="flex:1;"><label>性別</label>
+                <select id="p-gender"><option>男</option><option>女</option><option>不明</option></select>
+            </div>
+            <div style="flex:1;"><label>年齢</label><input type="number" id="p-age" value="20"></div>
+        </div>
+
+        <div><label>プロフィール（自己紹介）</label>
+            <textarea id="p-bio" rows="4" placeholder="ジョーシンやパソコン工房で鍛えた技術を持つ冒険者。"></textarea>
+        </div>
+
+        <button class="btn" onclick="saveData()">設定を保存する</button>
+        <p id="msg" style="color:#238636; font-size:12px; text-align:center;"></p>
     </div>
 </div>
 
 <script>
-    let party = Array(6).fill(null).map((_, i) => ({
-        name: `キャラ${i+1}`,
-        iconData: "", // DataURLが入る
-        spriteIdx: i   // プリセットの番号
-    }));
-    let currentHeroIdx = 0;
+    const img = document.getElementById('view-img');
+    const xRange = document.getElementById('x-range');
 
-    // スプライトの表示位置を計算（横7人と仮定）
-    function getSpritePos(idx) {
-        const size = 32;
-        const cols = 7; 
-        const x = (idx % cols) * size;
-        const y = Math.floor(idx / cols) * size;
-        return `-${x}px -${y}px`;
-    }
-
-    function init() {
-        const grid = document.getElementById('preset-grid');
-        for(let i=0; i<21; i++) {
-            const div = document.createElement('div');
-            div.className = 'sprite-item';
-            div.style.backgroundPosition = getSpritePos(i);
-            div.onclick = () => selectPreset(i);
-            grid.appendChild(div);
-        }
-        render();
-    }
-
-    function render() {
-        const list = document.getElementById('party-list');
-        list.innerHTML = party.map((p, i) => `
-            <div class="slot ${i===currentHeroIdx?'active':''}" onclick="currentHeroIdx=${i}; render();">
-                <div class="sprite-item" style="${p.iconData ? `background-image:url(${p.iconData}); background-size:cover;` : `background-position:${getSpritePos(p.spriteIdx)};`}"></div>
-                <span>${p.name}</span>
-            </div>
-        `).join('');
-
-        const curr = party[currentHeroIdx];
-        document.getElementById('edit-name').value = curr.name;
-        const display = document.getElementById('current-icon-display');
-        if(curr.iconData) {
-            display.style.backgroundImage = `url(${curr.iconData})`;
-            display.style.backgroundPosition = "center";
-            display.style.backgroundSize = "cover";
-        } else {
-            display.style.backgroundImage = "url('images/icons/all_icons.png')";
-            display.style.backgroundPosition = getSpritePos(curr.spriteIdx);
-            display.style.backgroundSize = "auto";
-        }
-    }
-
-    function updateData() {
-        party[currentHeroIdx].name = document.getElementById('edit-name').value;
-        render();
-    }
-
-    function openModal() { document.getElementById('iconModal').style.display = 'block'; }
-    function closeModal() { document.getElementById('iconModal').style.display = 'none'; }
-
-    function selectPreset(idx) {
-        party[currentHeroIdx].spriteIdx = idx;
-        party[currentHeroIdx].iconData = ""; // プリセットを使うので自作データは消す
-        closeModal();
-        render();
-    }
-
-    function loadLocalFile(event) {
+    // 端末から画像を読み込む
+    function loadFile(event) {
         const file = event.target.files[0];
-        if (!file) return;
         const reader = new FileReader();
         reader.onload = function(e) {
-            party[currentHeroIdx].iconData = e.target.result;
-            closeModal();
-            render();
+            img.src = e.target.result;
+            img.style.width = "100%"; // 読み込んだ画像は枠に合わせる
+            img.style.left = "0";
+            img.style.height = "auto";
+            xRange.disabled = true; // 自作画像の場合はスライダー無効
         };
         reader.readAsDataURL(file);
     }
 
-    init();
+    // スライダーで画像を横にずらす（切り抜き範囲設定）
+    function moveIcon() {
+        // 画像の横幅を基準に、左にずらす量を決める
+        const offset = xRange.value;
+        img.style.left = `-${offset}px`;
+    }
+
+    // 保存（ブラウザに一時記録）
+    function saveData() {
+        const data = {
+            name: document.getElementById('p-name').value,
+            nick: document.getElementById('p-nick').value,
+            gender: document.getElementById('p-gender').value,
+            age: document.getElementById('p-age').value,
+            bio: document.getElementById('p-bio').value,
+            iconLeft: img.style.left,
+            iconSrc: img.src
+        };
+        localStorage.setItem('myRPG_Hero', JSON.stringify(data));
+        document.getElementById('msg').innerText = "ブラウザに保存しました！";
+    }
+
+    // 読み込み
+    window.onload = function() {
+        const saved = localStorage.getItem('myRPG_Hero');
+        if(saved) {
+            const d = JSON.parse(saved);
+            document.getElementById('p-name').value = d.name;
+            document.getElementById('p-nick').value = d.nick;
+            document.getElementById('p-gender').value = d.gender;
+            document.getElementById('p-age').value = d.age;
+            document.getElementById('p-bio').value = d.bio;
+            img.src = d.iconSrc;
+            img.style.left = d.iconLeft;
+        }
+    }
 </script>
+
 </body>
 </html>
