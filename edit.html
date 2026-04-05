@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>Pixel Auto RPG - Unit Edit (Data Separated)</title>
+    <script src="masterData.js"></script>
+    <style>
+        body { background: #0d1117; color: #c9d1d9; font-family: 'Segoe UI', sans-serif; margin: 0; font-size: 13px; overflow: hidden; }
+        .main-layout { display: grid; grid-template-columns: 260px 1fr 420px; gap: 15px; padding: 15px; height: 98vh; }
+        .panel { background: #161b22; padding: 15px; border-radius: 8px; border: 1px solid #30363d; overflow-y: auto; }
+        .slot { display: flex; align-items: center; gap: 10px; padding: 10px; margin-bottom: 8px; background: #21262d; border: 2px solid transparent; cursor: pointer; border-radius: 6px; }
+        .slot.active { border-color: #58a6ff; background: #0d1117; box-shadow: 0 0 10px rgba(88,166,255,0.2); }
+        .slot-img { width: 44px; height: 44px; background: #30363d; display: flex; align-items: center; justify-content: center; font-size: 24px; border-radius: 4px; overflow: hidden; border: 1px solid #444; }
+        .slot-img img { width: 100%; height: 100%; object-fit: cover; }
+        .job-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; margin: 10px 0; }
+        .job-card { border: 1px solid #30363d; padding: 6px; text-align: center; cursor: pointer; border-radius: 4px; background: #21262d; font-size: 10px; }
+        .job-card.selected { background: #238636; border-color: #7ee787; font-weight: bold; }
+        .gambit-row { display: grid; grid-template-columns: 25px 1.4fr 1.2fr; gap: 5px; margin-bottom: 6px; align-items: center; }
+        select, input { background: #0d1117; color: #c9d1d9; border: 1px solid #30363d; padding: 6px; border-radius: 4px; font-size: 11px; width: 100%; box-sizing: border-box; }
+        .btn { width: 100%; padding: 12px; background: #238636; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; margin-top: 10px; }
+        .btn-sub { background: #30363d; color: #c9d1d9; border: 1px solid #444; padding: 6px 12px; border-radius: 4px; cursor: pointer; }
+        h3 { color: #58a6ff; border-bottom: 1px solid #30363d; padding-bottom: 5px; margin-top: 15px; font-size: 14px; }
+        .icon-preview-area { text-align: center; background: #0d1117; padding: 15px; border-radius: 8px; border: 1px solid #30363d; margin-bottom: 15px; }
+        .main-icon-display { width: 80px; height: 80px; background: #30363d; border-radius: 8px; overflow: hidden; border: 2px solid #58a6ff; margin: 0 auto 10px; display: flex; align-items: center; justify-content: center; font-size: 48px; }
+        .main-icon-display img { width: 100%; height: 100%; object-fit: cover; }
+        .status-badge { font-size: 10px; background: #21262d; padding: 2px 6px; border-radius: 10px; margin-right: 4px; border: 1px solid #30363d; }
+    </style>
+</head>
+<body>
+
+<div class="main-layout">
+    <div class="panel">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+            <button class="btn-sub" onclick="location.href='index.html'" style="font-size:11px;">◀ タイトルへ</button>
+            <span id="slot-display" style="font-size:11px; color:#8b949e;">Slot: -</span>
+        </div>
+        <h3>編成ユニット (6名)</h3>
+        <div id="slots"></div>
+        <button class="btn" style="background:#8957e5; margin-top:20px;" onclick="saveToStorage(true)">このパーティで冒険へ</button>
+    </div>
+
+    <div class="panel">
+        <div class="icon-preview-area">
+            <div id="main-icon-disp" class="main-icon-display">👤</div>
+            <label style="background: #21262d; border: 1px solid #444; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-size: 11px;">
+                画像をアップロード
+                <input type="file" id="icon-upload" accept="image/*" style="display:none;" onchange="handleIconUpload(event)">
+            </label>
+        </div>
+        
+        <h2 id="preview-info" style="text-align:center; margin:0 0 5px 0;">---</h2>
+        <div id="status-display" style="text-align:center; margin-bottom:15px;"></div>
+        
+        <h3>名前</h3>
+        <input type="text" id="name-in" oninput="syncName()">
+
+        <h3>クラス選択</h3>
+        <div id="job-list" class="job-grid"></div>
+
+        <h3>装備</h3>
+        <div style="background:#0d1117; padding:10px; border-radius:5px; border:1px solid #30363d; display:flex; gap:10px;">
+            <div style="flex:1;">主兵装<br><select id="wp-r"></select></div>
+            <div style="flex:1;">副兵装<br><select id="wp-l"></select></div>
+        </div>
+    </div>
+
+    <div class="panel">
+        <h3>自動行動ロジック (GAMBIT)</h3>
+        <div id="gambit-container"></div>
+        <button class="btn" onclick="saveToStorage(false)">セーブデータを更新</button>
+    </div>
+</div>
+
+<script>
+    // masterData.js からデータを取得
+    const jobData = MASTER_DATA.jobs;
+    const itemData = MASTER_DATA.items;
+
+    let currentUnitIdx = 0;
+    let currentSlotId = 1;
+    let partyData = Array(6).fill(null).map((_, i) => ({
+        name: `ユニット${i+1}`, job: Object.keys(jobData)[0], customIcon: null,
+        gambits: Array(10).fill(null).map(() => ({ target: "enemy", action: "通常攻撃" }))
+    }));
+
+    function handleIconUpload(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const img = new Image();
+            img.onload = function() {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                canvas.width = 100; canvas.height = 100;
+                const size = Math.min(img.width, img.height);
+                ctx.drawImage(img, (img.width-size)/2, (img.height-size)/2, size, size, 0, 0, 100, 100);
+                partyData[currentUnitIdx].customIcon = canvas.toDataURL('image/png');
+                refresh();
+            };
+            img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+    }
+
+    function init() {
+        // 保存データの復元ロジック
+        const savedSlot = localStorage.getItem('current_editing_slot') || "1";
+        currentSlotId = savedSlot;
+        const data = localStorage.getItem(`rpg_slot_${currentSlotId}`);
+        if(data) {
+            const parsed = JSON.parse(data);
+            if(parsed.party && parsed.party.length > 0) partyData = parsed.party;
+        }
+        document.getElementById('slot-display').innerText = `Slot: ${currentSlotId}`;
+
+        // ジョブリスト生成 (MASTER_DATAから動的に)
+        const jList = document.getElementById('job-list');
+        Object.keys(jobData).forEach(j => {
+            const div = document.createElement('div');
+            div.className = 'job-card';
+            div.innerText = j;
+            div.onclick = () => { partyData[currentUnitIdx].job = j; refresh(); };
+            jList.appendChild(div);
+        });
+
+        // 装備リスト生成
+        document.getElementById('wp-r').innerHTML = itemData.weapons.map(w => `<option>${w}</option>`).join('');
+
+        const gCont = document.getElementById('gambit-container');
+        for(let i=0; i<10; i++) {
+            gCont.innerHTML += `
+                <div class="gambit-row">
+                    <span>${i+1}</span>
+                    <select id="target-${i}" onchange="updateActionList(${i}); updateData(${i});">
+                        <option value="enemy">正面の敵</option>
+                        <option value="friend">味方</option>
+                    </select>
+                    <select id="action-${i}" onchange="updateData(${i})"></select>
+                </div>`;
+        }
+        refresh();
+    }
+
+    function refresh() {
+        const p = partyData[currentUnitIdx];
+        const jInfo = jobData[p.job];
+        document.getElementById('name-in').value = p.name;
+        document.getElementById('preview-info').innerText = `${p.name} / ${p.job}`;
+        
+        // ステータス表示
+        document.getElementById('status-display').innerHTML = `
+            <span class="status-badge">HP: ${jInfo.hp}</span>
+            <span class="status-badge">STR: ${jInfo.str}</span>
+            <span class="status-badge">DEF: ${jInfo.def}</span>
+            <span class="status-badge">AGI: ${jInfo.agi}</span>
+        `;
+
+        const mainDisp = document.getElementById('main-icon-disp');
+        mainDisp.innerHTML = p.customIcon ? `<img src="${p.customIcon}">` : jInfo.icon;
+
+        const lSel = document.getElementById('wp-l');
+        lSel.innerHTML = jInfo.dualWield 
+            ? itemData.weapons.map(w => `<option>${w}</option>`).join('') 
+            : itemData.shields.map(s => `<option>${s}</option>`).join('');
+
+        for(let i=0; i<10; i++) {
+            document.getElementById(`target-${i}`).value = p.gambits[i].target;
+            updateActionList(i);
+        }
+
+        const sCont = document.getElementById('slots');
+        sCont.innerHTML = partyData.map((p, i) => `
+            <div class="slot ${i===currentUnitIdx?'active':''}" onclick="currentUnitIdx=${i};refresh();">
+                <div class="slot-img">${p.customIcon ? `<img src="${p.customIcon}">` : jobData[p.job].icon}</div>
+                <div><b>${p.name}</b><br><small>${p.job}</small></div>
+            </div>`).join('');
+    }
+
+    function updateActionList(rowIndex) {
+        const p = partyData[currentUnitIdx];
+        const jInfo = jobData[p.job];
+        const targetVal = document.getElementById(`target-${rowIndex}`).value;
+        const actionSel = document.getElementById(`action-${rowIndex}`);
+        const availableSkills = (targetVal === "friend") ? jInfo.skills.buff : jInfo.skills.atk;
+        actionSel.innerHTML = availableSkills.map(s => `<option ${p.gambits[rowIndex].action === s ? 'selected' : ''}>${s}</option>`).join('');
+    }
+
+    function updateData(rowIndex) {
+        partyData[currentUnitIdx].gambits[rowIndex].target = document.getElementById(`target-${rowIndex}`).value;
+        partyData[currentUnitIdx].gambits[rowIndex].action = document.getElementById(`action-${rowIndex}`).value;
+    }
+
+    function syncName() {
+        partyData[currentUnitIdx].name = document.getElementById('name-in').value;
+        refresh();
+    }
+
+    function saveToStorage(isAdventure) {
+        const dataToSave = { slotId: currentSlotId, party: partyData, lastUpdate: new Date() };
+        localStorage.setItem(`rpg_slot_${currentSlotId}`, JSON.stringify(dataToSave));
+        if(isAdventure) {
+            alert("冒険へ出発します！（次はバトル画面を作ります）");
+            // location.href = 'battle.html'; // バトル画面ができたらここを有効に
+        } else {
+            alert("保存しました");
+        }
+    }
+
+    init();
+</script>
+</body>
+</html>
