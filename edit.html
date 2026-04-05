@@ -2,14 +2,16 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>Pixel Auto RPG - 奇跡の復活エディタ</title>
+    <title>Pixel Auto RPG - 1キャラずつ動くエディタ</title>
     <style>
         body { background: #0d1117; color: #c9d1d9; font-family: sans-serif; padding: 20px; display: flex; justify-content: center; }
-        .container { width: 850px; display: grid; grid-template-columns: 320px 1fr; gap: 25px; background: #161b22; padding: 30px; border-radius: 15px; border: 1px solid #30363d; }
+        .container { width: 850px; display: grid; grid-template-columns: 320px 1fr; gap: 25px; background: #161b22; padding: 30px; border-radius: 15px; border: 1px solid #30363d; box-shadow: 0 10px 40px rgba(0,0,0,0.6); }
+        
         .preview-pane { text-align: center; background: #0d1117; padding: 20px; border-radius: 10px; border: 1px solid #30363d; }
+        /* 枠のサイズを128pxに固定 */
         .icon-window { width: 128px; height: 128px; border: 4px solid #58a6ff; margin: 0 auto 15px; overflow: hidden; background: #21262d; position: relative; }
-        /* 外部の画像URLを直接指定するようにしました */
         #view-img { position: absolute; top: 0; left: 0; height: 128px; width: auto; image-rendering: pixelated; }
+        
         .nav-btn { background: #21262d; color: #58a6ff; border: 1px solid #30363d; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-weight: bold; margin: 0 5px; }
         .input-pane { display: flex; flex-direction: column; gap: 15px; }
         label { font-size: 13px; color: #8b949e; font-weight: bold; margin-bottom: 5px; display: block; }
@@ -23,7 +25,7 @@
     <div class="preview-pane">
         <h3>1. 外見の選択</h3>
         <div class="icon-window">
-            <img id="view-img" src="https://raw.githubusercontent.com/aamm08170324-spec/pixel-game/main/images/icons/all_icons.png">
+            <img id="view-img" src="https://raw.githubusercontent.com/aamm08170324-spec/pixel-game/main/images/icons/all_icons.png" onload="initChar()">
         </div>
         <div style="margin-bottom: 20px;">
             <button class="nav-btn" onclick="moveChar(-1)">◀ 前</button>
@@ -52,12 +54,28 @@
 
 <script>
     let idx = 0;
+    let charWidth = 0; // 1キャラあたりの幅を自動計算する
     const img = document.getElementById('view-img');
     const num = document.getElementById('num');
 
+    // 画像が読み込まれたら、1キャラあたりの幅を計算する
+    function initChar() {
+        // 画像の全体の横幅を20人で割る
+        charWidth = img.naturalWidth / 20;
+        // 表示サイズ(128px)に合わせた計算
+        updateView();
+    }
+
     function moveChar(s) {
         idx = (idx + s + 20) % 20;
-        img.style.left = "-" + (idx * 128) + "px";
+        updateView();
+    }
+
+    function updateView() {
+        // 画像の実際のサイズ比率を維持したまま、128px枠に合わせてずらす
+        const ratio = 128 / (img.naturalHeight); 
+        const offset = idx * (img.naturalWidth / 20) * ratio;
+        img.style.left = "-" + offset + "px";
         num.innerText = (idx + 1) + " / 20";
     }
 
@@ -67,6 +85,7 @@
             img.src = x.target.result;
             img.style.left = "0";
             img.style.width = "100%";
+            // 自作画像の場合は「次へ」ボタンを無効にするなどの処理はせず、表示のみ
         };
         reader.readAsDataURL(e.target.files[0]);
     }
