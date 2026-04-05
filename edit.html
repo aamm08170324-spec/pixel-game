@@ -32,7 +32,7 @@
     <div class="preview-pane">
         <h3>見た目の選択</h3>
         <div class="icon-display">
-            <img id="view-img" src="images/icons/all_icons.png" onerror="this.style.display='none'; alert('all_icons.pngが見つかりません。images/icons/に入れてください。');">
+            <img id="view-img" src="all_icons.png" onerror="this.style.display='none'; alert('all_icons.pngが見つかりません。edit.htmlと同じ場所にアップロードしてください。');">
         </div>
         
         <div id="preset-controls">
@@ -68,26 +68,22 @@
 </div>
 
 <script>
-    let currentIdx = 0; // 0番目〜19番目
+    let currentIdx = 0; 
     const totalChars = 20;
     const img = document.getElementById('view-img');
     const charNumDisplay = document.getElementById('char-num');
     const presetControls = document.getElementById('preset-controls');
 
-    // 「前へ」「次へ」で画像をずらす
     function changeChar(step) {
         currentIdx += step;
-        
-        // ループ処理
         if (currentIdx >= totalChars) currentIdx = 0;
         if (currentIdx < 0) currentIdx = totalChars - 1;
-
         updateView();
     }
 
     function updateView() {
-        // 1キャラあたりの横幅（all_icons.pngが32px単位で並んでいると仮定）
-        // 128pxの表示枠に合わせるため、倍率計算
+        // 画像内の各キャラの横位置を計算（1キャラ128px相当に拡大表示）
+        // 生成されたスプライトシートの並びに合わせて調整が必要な場合があります
         const stepSize = 128; 
         img.style.left = `-${currentIdx * stepSize}px`;
         img.style.width = "auto";
@@ -95,7 +91,6 @@
         charNumDisplay.innerText = `${currentIdx + 1} / ${totalChars}`;
     }
 
-    // 端末から画像読み込み
     function loadCustomFile(event) {
         const file = event.target.files[0];
         if (!file) return;
@@ -105,13 +100,12 @@
             img.style.left = "0";
             img.style.width = "100%";
             img.style.height = "auto";
-            presetControls.style.opacity = "0.3"; // プリセット操作を半透明に
+            presetControls.style.opacity = "0.3";
             presetControls.style.pointerEvents = "none";
         };
         reader.readAsDataURL(file);
     }
 
-    // ブラウザの保存
     function saveToBrowser() {
         const data = {
             name: document.getElementById('p-name').value,
@@ -129,7 +123,6 @@
         setTimeout(() => status.innerText = "", 3000);
     }
 
-    // 読み込み
     window.onload = function() {
         const saved = localStorage.getItem('MyRPG_Character');
         if(saved) {
