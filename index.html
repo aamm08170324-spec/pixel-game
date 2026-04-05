@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pixel Auto RPG - Character Creation</title>
+    <style>
+        body { background: #2c3e50; color: white; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; }
+        .container { display: flex; gap: 20px; padding: 20px; max-width: 1000px; }
+        .editor, .preview { background: #34495e; padding: 20px; border-radius: 10px; border: 2px solid #ecf0f1; }
+        .slot-container { display: flex; gap: 10px; margin-bottom: 20px; }
+        .slot { width: 50px; height: 50px; background: #2c3e50; border: 2px solid #7f8c8d; cursor: pointer; display: flex; align-items: center; justify-content: center; position: relative; }
+        .slot.active { border-color: #f1c40f; box-shadow: 0 0 10px #f1c40f; }
+        .slot img { max-width: 100%; max-height: 100%; }
+        .input-group { margin-bottom: 10px; }
+        input, select { width: 100%; padding: 8px; margin-top: 5px; border-radius: 4px; border: none; }
+        #canvas-container { position: relative; border: 1px solid #ccc; margin-top: 10px; cursor: crosshair; overflow: hidden; background: #000; }
+        canvas { display: block; max-width: 400px; }
+        .btn { background: #27ae60; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin-top: 10px; }
+        .btn:hover { background: #2ecc71; }
+        .preview-box { border: 2px dashed #95a5a6; width: 100px; height: 100px; margin-top: 10px; display: flex; align-items: center; justify-content: center; background: #2c3e50; }
+        #crop-preview { width: 80px; height: 80px; border: 1px solid #fff; }
+    </style>
+</head>
+<body>
+
+<h1>Pixel Auto RPG - キャラメイク</h1>
+
+<div class="slot-container" id="party-slots">
+    </div>
+
+<div class="container">
+    <div class="editor">
+        <h3>キャラクター編集</h3>
+        <div class="input-group">
+            <label>フルネーム</label>
+            <input type="text" id="full-name" placeholder="例：アルベルト・ハイゼンベルク">
+        </div>
+        <div class="input-group">
+            <label>ニックネーム（戦闘表示用）</label>
+            <input type="text" id="nick-name" placeholder="例：アル">
+        </div>
+        <div class="input-group">
+            <label>年齢 / 性別</label>
+            <div style="display:flex; gap:10px;">
+                <input type="number" id="age" value="20" style="width: 60px;">
+                <select id="gender"><option value="male">男</option><option value="female">女</option></select>
+            </div>
+        </div>
+        <div class="input-group">
+            <label>ジョブ（見た目）選択</label>
+            <select id="job-select">
+                <option value="1">ナイト</option><option value="2">魔道士</option>
+                <option value="3">シーフ</option><option value="4">武闘家</option>
+            </select>
+        </div>
+        <hr>
+        <div class="input-group">
+            <label>カスタムアイコン (PCから画像を選択)</label>
+            <input type="file" id="image-loader" accept="image/*">
+            <div id="canvas-container">
+                <canvas id="image-canvas"></canvas>
+            </div>
+            <p style="font-size:12px;">マウスでドラッグして切り抜き範囲を指定してください</p>
+        </div>
+        <button class="btn" onclick="saveCharacter()">このキャラを保存</button>
+    </div>
+
+    <div class="preview">
+        <h3>現在のアイコンプレビュー</h3>
+        <div class="preview-box">
+            <canvas id="crop-preview" width="80" height="80"></canvas>
+        </div>
+        <p id="preview-info" style="font-size: 14px; margin-top:10px;">名前: ---<br>年齢: ---</p>
+        <button class="btn" style="background:#e67e22;" onclick="alert('ダンジョン出発機能は次回のアップデートで実装！')">ダンジョンへ出発！</button>
+    </div>
+</div>
+
+<script>
+    const canvas = document.getElementById('image-canvas');
+    const ctx = canvas.getContext('2d');
+    const cropPreview = document.getElementById('crop-preview');
+    const pCtx = cropPreview.getContext('2d');
+    const slotsContainer = document.getElementById('party-slots');
+
+    let img = new Image();
+    let cropX = 0, cropY = 0, cropSize = 100;
+    let party = Array(6).fill(null).map(() => ({ name: '', nick: '', age: 20, gender: 'male', icon: null }));
+    let currentSlot = 0;
+
+    // スロットの生成
+    function renderSlots() {
+        slotsContainer.innerHTML = '';
+        party.forEach((p, i) => {
+            const div = document.createElement('div');
+            div.className = `slot ${i === currentSlot ? 'active' : ''}`;
+            div.innerHTML = p.icon ? `<img src="${p.icon}">` : (i+1);
+            div.onclick = () => selectSlot(i);
+            slotsContainer.appendChild(div);
+        });
+    }
+
+    function selectSlot(i) {
+        currentSlot = i;
+        renderSlots();
+        // ここで既存データを入力欄に戻す処理を後で追加
+    }
+
+    // 画像読み込み
+    document.getElementById('image-loader').addEventListener('change', (e) => {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            img.onload = () => {
+                canvas.width = img.width;
+                canvas.height = img.height;
+                ctx.drawImage(img, 0, 0);
+                updateCrop();
+            };
+            img.src = event.target.result;
+        };
+        reader.readAsDataURL(e.target.files[0]);
+    });
+
+    // 簡易クロップ（中央付近を切り抜き）
+    canvas.onmousedown = (e) => {
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+        cropX = (e.clientX - rect.left) * scaleX - 40;
+        cropY = (e.clientY - rect.top) * scaleY - 40;
+        updateCrop();
+    };
+
+    function updateCrop() {
+        if (!img.src) return;
+        pCtx.clearRect(0, 0, 80, 80);
+        pCtx.drawImage(img, cropX, cropY, 100, 100, 0, 0, 80, 80);
+    }
+
+    function saveCharacter() {
+        const name = document.getElementById('full-name').value;
+        const iconData = cropPreview.toDataURL();
+        party[currentSlot] = { name: name, icon: iconData };
+        document.getElementById('preview-info').innerHTML = `名前: ${name}<br>保存完了！`;
+        renderSlots();
+        alert('キャラクターを保存しました！');
+    }
+
+    renderSlots();
+</script>
+</body>
+</html>
