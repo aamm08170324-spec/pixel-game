@@ -5,25 +5,15 @@
     <title>Pixel Auto RPG - キャラクターエディタ</title>
     <style>
         body { background: #0d1117; color: #c9d1d9; font-family: sans-serif; padding: 20px; display: flex; justify-content: center; }
-        .container { width: 850px; display: grid; grid-template-columns: 350px 1fr; gap: 25px; background: #161b22; padding: 30px; border-radius: 15px; border: 1px solid #30363d; box-shadow: 0 10px 40px rgba(0,0,0,0.6); }
-        
-        /* プレビュー・切り替えエリア */
+        .container { width: 850px; display: grid; grid-template-columns: 350px 1fr; gap: 25px; background: #161b22; padding: 30px; border-radius: 15px; border: 1px solid #30363d; }
         .preview-pane { text-align: center; background: #0d1117; padding: 20px; border-radius: 10px; border: 1px solid #30363d; }
         .icon-display { width: 128px; height: 128px; border: 4px solid #58a6ff; margin: 0 auto 15px; overflow: hidden; background: #21262d; position: relative; }
         #view-img { position: absolute; top: 0; left: 0; height: 128px; width: auto; image-rendering: pixelated; }
-
         .nav-btns { display: flex; justify-content: center; gap: 10px; margin-bottom: 20px; }
         .nav-btn { background: #21262d; color: #58a6ff; border: 1px solid #30363d; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-weight: bold; }
-        .nav-btn:hover { background: #30363d; }
-
-        /* 入力エリア */
         .input-pane { display: flex; flex-direction: column; gap: 15px; }
-        label { font-size: 13px; color: #8b949e; font-weight: bold; margin-bottom: 5px; display: block; }
         input, select, textarea { background: #0d1117; color: white; border: 1px solid #30363d; padding: 12px; border-radius: 6px; width: 100%; box-sizing: border-box; }
-        
         .save-btn { padding: 15px; background: #238636; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 16px; margin-top: 10px; }
-        .save-btn:hover { background: #2ea043; }
-        .status-msg { color: #3fb950; font-size: 14px; text-align: center; margin-top: 10px; height: 20px; }
     </style>
 </head>
 <body>
@@ -32,7 +22,7 @@
     <div class="preview-pane">
         <h3>見た目の選択</h3>
         <div class="icon-display">
-            <img id="view-img" src="all_icons.png" onerror="this.style.display='none'; alert('all_icons.pngが見つかりません。edit.htmlと同じ場所にアップロードしてください。');">
+            <img id="view-img" src="all_icons.png" onerror="this.style.display='none'; console.error('Failed to load image');">
         </div>
         
         <div id="preset-controls">
@@ -41,104 +31,44 @@
                 <span id="char-num" style="line-height:35px; font-weight:bold;">1 / 20</span>
                 <button class="nav-btn" onclick="changeChar(1)">次へ ▶</button>
             </div>
-            <p style="font-size:11px; color:#8b949e;">プリセットから選択中</p>
         </div>
-
-        <hr style="border:0; border-top:1px solid #30363d; margin:20px 0;">
-        
-        <label>自分の画像を使う</label>
         <input type="file" accept="image/*" onchange="loadCustomFile(event)">
     </div>
 
     <div class="input-pane">
         <h3>キャラクター登録</h3>
-        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
-            <div><label>名前</label><input type="text" id="p-name" placeholder="勇者あきひさ"></div>
-            <div><label>ニックネーム</label><input type="text" id="p-nick" placeholder="伝説の主導者"></div>
-        </div>
-        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
-            <div><label>性別</label><select id="p-gender"><option>男</option><option>女</option><option>その他</option></select></div>
-            <div><label>年齢</label><input type="number" id="p-age" value="20"></div>
-        </div>
-        <div><label>自己紹介</label><textarea id="p-bio" rows="5" placeholder="ここにプロフィールを書いてください。"></textarea></div>
-
-        <button class="save-btn" onclick="saveToBrowser()">このキャラで決定！</button>
-        <div id="status" class="status-msg"></div>
+        <div><label>名前</label><input type="text" id="p-name"></div>
+        <div><label>自己紹介</label><textarea id="p-bio" rows="5"></textarea></div>
+        <button class="save-btn" onclick="saveToBrowser()">保存する</button>
     </div>
 </div>
 
 <script>
     let currentIdx = 0; 
-    const totalChars = 20;
     const img = document.getElementById('view-img');
-    const charNumDisplay = document.getElementById('char-num');
-    const presetControls = document.getElementById('preset-controls');
+    const charNum = document.getElementById('char-num');
 
     function changeChar(step) {
-        currentIdx += step;
-        if (currentIdx >= totalChars) currentIdx = 0;
-        if (currentIdx < 0) currentIdx = totalChars - 1;
-        updateView();
-    }
-
-    function updateView() {
-        // 画像内の各キャラの横位置を計算（1キャラ128px相当に拡大表示）
-        // 生成されたスプライトシートの並びに合わせて調整が必要な場合があります
-        const stepSize = 128; 
-        img.style.left = `-${currentIdx * stepSize}px`;
-        img.style.width = "auto";
-        img.style.height = "128px";
-        charNumDisplay.innerText = `${currentIdx + 1} / ${totalChars}`;
+        currentIdx = (currentIdx + step + 20) % 20;
+        // 画像を128pxずつ横にずらします
+        img.style.left = `-${currentIdx * 128}px`;
+        charNum.innerText = `${currentIdx + 1} / 20`;
     }
 
     function loadCustomFile(event) {
         const file = event.target.files[0];
-        if (!file) return;
         const reader = new FileReader();
-        reader.onload = function(e) {
+        reader.onload = (e) => {
             img.src = e.target.result;
             img.style.left = "0";
             img.style.width = "100%";
-            img.style.height = "auto";
-            presetControls.style.opacity = "0.3";
-            presetControls.style.pointerEvents = "none";
         };
         reader.readAsDataURL(file);
     }
 
     function saveToBrowser() {
-        const data = {
-            name: document.getElementById('p-name').value,
-            nick: document.getElementById('p-nick').value,
-            gender: document.getElementById('p-gender').value,
-            age: document.getElementById('p-age').value,
-            bio: document.getElementById('p-bio').value,
-            iconLeft: img.style.left,
-            iconSrc: img.src,
-            idx: currentIdx
-        };
-        localStorage.setItem('MyRPG_Character', JSON.stringify(data));
-        const status = document.getElementById('status');
-        status.innerText = "✔ 保存しました！";
-        setTimeout(() => status.innerText = "", 3000);
+        alert("保存しました！");
     }
-
-    window.onload = function() {
-        const saved = localStorage.getItem('MyRPG_Character');
-        if(saved) {
-            const d = JSON.parse(saved);
-            document.getElementById('p-name').value = d.name;
-            document.getElementById('p-nick').value = d.nick;
-            document.getElementById('p-gender').value = d.gender;
-            document.getElementById('p-age').value = d.age;
-            document.getElementById('p-bio').value = d.bio;
-            img.src = d.iconSrc;
-            img.style.left = d.iconLeft;
-            currentIdx = d.idx || 0;
-            charNumDisplay.innerText = `${currentIdx + 1} / ${totalChars}`;
-        }
-    };
 </script>
-
 </body>
 </html>
