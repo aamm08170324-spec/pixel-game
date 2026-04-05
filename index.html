@@ -2,136 +2,182 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>Pixel Auto RPG - Strategy Menu</title>
+    <title>Pixel Auto RPG - Original Edition</title>
     <style>
-        body { background: #1a1a2e; color: #e0e0e0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; display: flex; flex-direction: column; align-items: center; }
-        .main-layout { display: grid; grid-template-columns: 250px 1fr 300px; gap: 20px; padding: 20px; width: 95%; max-width: 1400px; }
+        /* スタイルは維持しつつ、デザインをさらに微調整 */
+        body { background: #0d1117; color: #c9d1d9; font-family: 'Segoe UI', sans-serif; margin: 0; font-size: 13px; }
+        .main-layout { display: grid; grid-template-columns: 240px 1fr 400px; gap: 15px; padding: 15px; height: 95vh; }
+        .panel { background: #161b22; padding: 15px; border-radius: 8px; border: 1px solid #30363d; overflow-y: auto; }
         
-        /* スロット・パーティ一覧 */
-        .sidebar { background: #16213e; padding: 15px; border-radius: 10px; border: 1px solid #0f3460; }
-        .slot { display: flex; align-items: center; gap: 10px; padding: 10px; margin-bottom: 10px; background: #0f3460; border: 2px solid transparent; cursor: pointer; border-radius: 5px; }
-        .slot.active { border-color: #e94560; background: #1a1a2e; }
-        .slot-img { width: 40px; height: 40px; background: #333; border-radius: 3px; overflow: hidden; }
-        .slot-img img { width: 100%; height: 100%; object-fit: cover; }
+        .slot { display: flex; align-items: center; gap: 10px; padding: 10px; margin-bottom: 10px; background: #21262d; border: 2px solid transparent; cursor: pointer; border-radius: 6px; }
+        .slot.active { border-color: #58a6ff; background: #0d1117; }
+        .slot-img { width: 40px; height: 40px; background: #30363d; display: flex; align-items: center; justify-content: center; font-size: 24px; border-radius: 4px; }
 
-        /* キャラクター編集・ジョブ選択 */
-        .editor { background: #16213e; padding: 20px; border-radius: 10px; }
-        .job-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin: 15px 0; }
-        .job-card { border: 1px solid #444; padding: 5px; text-align: center; cursor: pointer; border-radius: 5px; font-size: 12px; }
-        .job-card:hover { border-color: #e94560; }
-        .job-card.selected { background: #e94560; color: white; border-color: #fff; }
+        .job-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 15px 0; }
+        .job-card { border: 1px solid #30363d; padding: 8px; text-align: center; cursor: pointer; border-radius: 5px; background: #21262d; transition: 0.2s; }
+        .job-card:hover { border-color: #58a6ff; }
+        .job-card.selected { background: #238636; border-color: #7ee787; font-weight: bold; }
         
-        /* ガンビット・装備設定 */
-        .strategy { background: #16213e; padding: 20px; border-radius: 10px; }
-        .gambit-row { display: flex; gap: 5px; margin-bottom: 8px; font-size: 13px; }
-        select, input { background: #0f3460; color: white; border: 1px solid #444; padding: 5px; border-radius: 3px; }
+        .equip-group { display: flex; gap: 10px; margin-bottom: 15px; background: #0d1117; padding: 10px; border-radius: 5px; border: 1px solid #30363d; }
+
+        .gambit-row { display: grid; grid-template-columns: 25px 1.2fr 1fr; gap: 5px; margin-bottom: 6px; align-items: center; }
+        select { background: #0d1117; color: #c9d1d9; border: 1px solid #30363d; padding: 6px; border-radius: 4px; font-size: 11px; }
         
-        .btn-save { width: 100%; padding: 15px; background: #e94560; color: white; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; margin-top: 20px; }
-        .preview-area { text-align: center; margin-bottom: 20px; background: #000; padding: 10px; border-radius: 10px; border: 2px solid #e94560; }
+        .btn { width: 100%; padding: 12px; background: #238636; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        .btn:hover { background: #2ea043; }
         
-        h3 { border-bottom: 2px solid #e94560; padding-bottom: 5px; margin-top: 0; }
-        label { font-size: 12px; color: #888; }
+        .preview { text-align: center; background: linear-gradient(180deg, #161b22 0%, #0d1117 100%); padding: 20px; border-radius: 8px; border: 1px solid #58a6ff; margin-bottom: 15px; }
+        h3 { margin: 0 0 10px 0; color: #58a6ff; border-bottom: 1px solid #30363d; padding-bottom: 5px; font-size: 14px; text-transform: uppercase; }
+        input[type="text"] { width: 92%; background: #0d1117; color: white; border: 1px solid #30363d; padding: 8px; border-radius: 4px; margin-bottom: 10px; }
     </style>
 </head>
 <body>
 
-<h1 style="color: #e94560;">PIXEL AUTO RPG - 準備画面</h1>
-
 <div class="main-layout">
-    <div class="sidebar">
-        <h3>PARTY</h3>
+    <div class="panel">
+        <h3>編成ユニット</h3>
         <div id="slots"></div>
-        <button class="btn-save" style="background:#27ae60;">ダンジョン出発！</button>
+        <button class="btn" style="background:#8957e5; margin-top:20px;">作戦開始（準備完了）</button>
     </div>
 
-    <div class="editor">
-        <div class="preview-area">
-            <canvas id="main-preview" width="120" height="120"></canvas>
-            <p id="preview-name" style="font-weight:bold; margin:5px 0;">New Character</p>
+    <div class="panel">
+        <div class="preview">
+            <div id="job-icon-disp" style="font-size:60px; margin-bottom: 10px;">🛡️</div>
+            <p id="preview-info" style="font-size:18px; font-weight:bold;">---</p>
         </div>
+        
+        <h3>基本設定</h3>
+        <input type="text" id="name-in" placeholder="ユニット名" oninput="sync()">
+        
+        <h3>クラス選択</h3>
+        <div class="job-grid" id="job-list"></div>
 
-        <h3>BASIC INFO</h3>
-        <div style="display:flex; gap:10px;">
-            <div style="flex:1;"><label>名前</label><input type="text" id="name-input" oninput="updateUI()"></div>
-            <div style="flex:1;"><label>ニックネーム</label><input type="text" id="nick-input"></div>
-        </div>
-
-        <h3>JOB SELECT (見た目)</h3>
-        <div class="job-grid" id="job-list">
+        <h3>装備スロット</h3>
+        <div class="equip-group">
+            <div style="flex:1;">
+                <label>主兵装</label>
+                <select id="wp-right"><option>竜殺しの大剣</option><option>名刀・十六夜</option><option>閃光の細剣</option></select>
             </div>
-
-        <h3>CUSTOM ICON</h3>
-        <input type="file" id="img-upload" accept="image/*">
-        <p style="font-size:11px;">※画像をクリックして顔を切り抜き</p>
-        <canvas id="crop-source" style="max-width:100%; border:1px solid #444; margin-top:5px;"></canvas>
+            <div style="flex:1;">
+                <label id="label-left">副兵装</label>
+                <select id="wp-left"></select>
+            </div>
+        </div>
     </div>
 
-    <div class="strategy">
-        <h3>EQUIPMENT</h3>
-        <label>武器</label><select><option>鉄の剣</option><option>木の杖</option></select><br>
-        <label>防具</label><select><option>革の鎧</option><option>布の服</option></select>
-        
-        <h3 style="margin-top:20px;">GAMBIT (作戦)</h3>
-        <div id="gambit-list">
-            <div class="gambit-row"><span>1.</span><select><option>HP < 50%の味方</option><option>目の前の敵</option></select><select><option>ケアル</option><option>たたかう</option></select></div>
-            <div class="gambit-row"><span>2.</span><select><option>目の前の敵</option><option>最もHPが低い敵</option></select><select><option>たたかう</option><option>防御</option></select></div>
-            <div class="gambit-row"><span>3.</span><select><option>常時</option></select><select><option>防御</option></select></div>
-        </div>
-        
-        <button class="btn-save" onclick="saveCurrent()">設定を保存</button>
+    <div class="panel">
+        <h3>自動行動ロジック (GAMBIT)</h3>
+        <div id="gambit-container"></div>
+        <button class="btn" onclick="save()">クラウド同期保存</button>
     </div>
 </div>
 
 <script>
+    // 完全オリジナルスキル名に書き換え！
+    const jobData = {
+        "剣聖": { 
+            icon: "⚔️", 
+            skills: ["通常攻撃", "迅雷・一閃突き", "不動の虚空斬", "極光・天砕波", "神速二連斬"], 
+            dual: true 
+        },
+        "重騎士": { 
+            icon: "🛡️", 
+            skills: ["通常攻撃", "鉄壁の構え", "献身の守護", "渾身の盾打"], 
+            dual: false 
+        },
+        "聖導師": { 
+            icon: "⚕️", 
+            skills: ["通常攻撃", "ヒールオーラ", "浄化の風", "再起の福音", "防護の結界"], 
+            dual: false 
+        },
+        "魔導師": { 
+            icon: "🔮", 
+            skills: ["通常攻撃", "紅蓮の劫火", "凍結の波動", "紫電の奔流", "終焉の隕石"], 
+            dual: false 
+        },
+        "潜伏者": { 
+            icon: "👤", 
+            skills: ["通常攻撃", "影縫いの矢", "隠密の極意", "毒蛇の牙", "幻影の身代わり"], 
+            dual: true 
+        },
+        "狂戦士": { 
+            icon: "🪓", 
+            skills: ["通常攻撃", "激昂の咆哮", "荒れ狂う一撃", "不屈の闘志"], 
+            dual: false 
+        }
+    };
+
     let currentId = 0;
-    const jobs = ["ナイト", "戦士", "シーフ", "黒魔道士", "白魔道士", "武闘家", "竜騎士", "忍者", "侍", "吟遊詩人", "狩人", "赤魔道士", "魔法戦士", "召喚士", "時魔道士", "踊り子", "薬師", "魔獣使い", "バイキング", "賢者"];
-    let party = Array(6).fill(null).map((_, i) => ({ id: i, name: `キャラ${i+1}`, nick: `C${i+1}`, job: "ナイト", icon: null }));
+    let party = Array(6).fill(null).map((_, i) => ({
+        name: `Unit-${i+1}`, job: "重騎士", 
+        gambits: Array(10).fill({target: "目の前の敵", action: "通常攻撃"})
+    }));
 
     function init() {
-        renderSlots();
-        renderJobList();
-        loadCharacter(0);
-    }
-
-    function renderSlots() {
-        const container = document.getElementById('slots');
-        container.innerHTML = party.map((p, i) => `
-            <div class="slot ${i === currentId ? 'active' : ''}" onclick="loadCharacter(${i})">
-                <div class="slot-img">${p.icon ? `<img src="${p.icon}">` : ''}</div>
-                <div><div>${p.name}</div><small>${p.job}</small></div>
-            </div>
-        `).join('');
-    }
-
-    function renderJobList() {
         const list = document.getElementById('job-list');
-        list.innerHTML = jobs.map(j => `<div class="job-card" onclick="setJob('${j}')">${j}</div>`).join('');
+        Object.keys(jobData).forEach(j => {
+            const div = document.createElement('div');
+            div.className = 'job-card';
+            div.innerText = j;
+            div.onclick = () => selectJob(j);
+            list.appendChild(div);
+        });
+        
+        const gContainer = document.getElementById('gambit-container');
+        for(let i=0; i<10; i++) {
+            gContainer.innerHTML += `
+                <div class="gambit-row">
+                    <span>${i+1}</span>
+                    <select><option>正面の敵</option><option>弱っている味方</option><option>強敵（BOSS）</option><option>自分自身</option></select>
+                    <select id="action-${i}"></select>
+                </div>`;
+        }
+        refresh();
     }
 
-    function loadCharacter(id) {
-        currentId = id;
-        const p = party[id];
-        document.getElementById('name-input').value = p.name;
-        document.getElementById('nick-input').value = p.nick;
-        updateUI();
-        renderSlots();
-    }
-
-    function setJob(j) {
+    function selectJob(j) {
         party[currentId].job = j;
-        updateUI();
+        refresh();
     }
 
-    function updateUI() {
-        const name = document.getElementById('name-input').value;
-        document.getElementById('preview-name').innerText = `${name || '---'} [${party[currentId].job}]`;
+    function refresh() {
+        const p = party[currentId];
+        const jInfo = jobData[p.job];
+        
+        document.getElementById('name-in').value = p.name;
+        document.getElementById('preview-info').innerText = `${p.name} / ${p.job}`;
+        document.getElementById('job-icon-disp').innerText = jInfo.icon;
+
+        const leftSelect = document.getElementById('wp-left');
+        const leftLabel = document.getElementById('label-left');
+        if(jInfo.dual) {
+            leftLabel.innerText = "副兵装 (二刀流)";
+            leftSelect.innerHTML = `<option>妖刀・村正</option><option>ミスリルダガー</option><option>風切りの短剣</option>`;
+        } else {
+            leftLabel.innerText = "副兵装 (防具)";
+            leftSelect.innerHTML = `<option>黒銀の円盾</option><option>聖騎士の盾</option><option>魔力の籠手</option>`;
+        }
+
+        for(let i=0; i<10; i++) {
+            const sel = document.getElementById(`action-${i}`);
+            sel.innerHTML = jInfo.skills.map(s => `<option>${s}</option>`).join('');
+        }
+
+        const sCont = document.getElementById('slots');
+        sCont.innerHTML = party.map((p, i) => `
+            <div class="slot ${i===currentId?'active':''}" onclick="currentId=${i};refresh();">
+                <div class="slot-img">${jobData[p.job].icon}</div>
+                <div><b>${p.name}</b><br><small>${p.job}</small></div>
+            </div>`).join('');
     }
 
-    function saveCurrent() {
-        party[currentId].name = document.getElementById('name-input').value;
-        party[currentId].nick = document.getElementById('nick-input').value;
-        renderSlots();
-        alert("キャラクター設定を保存しました！");
+    function sync() {
+        party[currentId].name = document.getElementById('name-in').value;
+        document.getElementById('preview-info').innerText = `${party[currentId].name} / ${party[currentId].job}`;
+    }
+
+    function save() {
+        alert("設定を保存しました。これでスクエニさんも安心（？）なオリジナル仕様です！");
     }
 
     init();
