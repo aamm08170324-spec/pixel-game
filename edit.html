@@ -2,65 +2,73 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>Pixel Auto RPG - 究極エディタ</title>
+    <title>Pixel Auto RPG - 最終完成版エディタ</title>
     <style>
         body { background: #0d1117; color: #c9d1d9; font-family: sans-serif; padding: 20px; display: flex; justify-content: center; }
-        .container { width: 800px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; background: #161b22; padding: 30px; border-radius: 12px; border: 1px solid #30363d; }
+        .container { width: 900px; display: grid; grid-template-columns: 350px 1fr; gap: 30px; background: #161b22; padding: 30px; border-radius: 12px; border: 1px solid #30363d; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
         
         /* プレビューエリア */
         .preview-pane { text-align: center; background: #0d1117; padding: 20px; border-radius: 8px; border: 1px solid #30363d; }
-        .icon-window { width: 96px; height: 96px; border: 3px solid #58a6ff; margin: 0 auto 15px; overflow: hidden; background: #21262d; display: flex; align-items: center; justify-content: center; position: relative; }
-        #view-img { width: 100%; image-rendering: pixelated; transition: 0.1s; }
+        .icon-window { width: 128px; height: 128px; border: 4px solid #58a6ff; margin: 0 auto 20px; overflow: hidden; background: #21262d; position: relative; box-shadow: inset 0 0 10px rgba(0,0,0,0.5); }
+        #view-img { position: absolute; top: 0; left: 0; height: 128px; width: auto; image-rendering: pixelated; }
 
         /* 入力エリア */
-        .input-pane { display: flex; flex-direction: column; gap: 12px; }
-        label { font-size: 12px; color: #8b949e; font-weight: bold; }
-        input, select, textarea { background: #0d1117; color: white; border: 1px solid #30363d; padding: 10px; border-radius: 6px; width: 100%; box-sizing: border-box; }
+        .input-pane { display: flex; flex-direction: column; gap: 15px; }
+        h3 { margin-top: 0; color: #58a6ff; border-bottom: 1px solid #30363d; padding-bottom: 10px; }
+        label { font-size: 13px; color: #8b949e; font-weight: bold; display: block; margin-bottom: 5px; }
+        input, select, textarea { background: #0d1117; color: white; border: 1px solid #30363d; padding: 12px; border-radius: 6px; width: 100%; box-sizing: border-box; font-size: 14px; }
+        input:focus { border-color: #58a6ff; outline: none; }
         
-        /* 切り抜き調整用スライダー */
-        .slider-group { background: #21262d; padding: 10px; border-radius: 6px; margin-top: 10px; }
-        .btn { padding: 12px; background: #238636; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; margin-top: 10px; }
-        .btn-sub { background: #21262d; border: 1px solid #30363d; color: #58a6ff; }
+        .slider-group { background: #21262d; padding: 15px; border-radius: 8px; margin-top: 20px; text-align: left; }
+        .btn { padding: 15px; background: #238636; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 16px; transition: 0.2s; }
+        .btn:hover { background: #2ea043; }
+        .msg { color: #3fb950; font-size: 14px; text-align: center; margin-top: 10px; height: 20px; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <div class="preview-pane">
-        <h3>見た目の設定</h3>
+        <h3>キャラクター外見</h3>
         <div class="icon-window">
-            <img id="view-img" src="images/icons/all_icons.png" style="width: auto; height: 96px; position: absolute; left: 0;">
+            <img id="view-img" src="images/icons/all_icons.png" onerror="this.src='https://via.placeholder.com/128?text=No+Image'">
         </div>
         
-        <label>1. 画像を選択（端末から選ぶ）</label>
-        <input type="file" accept="image/*" onchange="loadFile(event)" style="margin-bottom:15px;">
+        <div style="text-align:left;">
+            <label>画像をアップロード（自作画像用）</label>
+            <input type="file" accept="image/*" onchange="loadFile(event)">
+        </div>
 
         <div class="slider-group">
-            <label>2. 範囲設定（左右にずらす）</label>
+            <label>表示位置の調整（左右）</label>
             <input type="range" id="x-range" min="0" max="1000" value="0" oninput="moveIcon()">
-            <p style="font-size:11px; margin-top:5px;">※20人画像(all_icons.png)を使っている時は、これでキャラを切り替えられます</p>
+            <p style="font-size:11px; color:#8b949e; margin-top:10px;">
+                ※「all_icons.png」を表示している時、このスライダーで20人のキャラを切り替えられます。
+            </p>
         </div>
     </div>
 
     <div class="input-pane">
-        <h3>プロフィール設定</h3>
+        <h3>プロフィール登録</h3>
         
-        <div><label>名前</label><input type="text" id="p-name" placeholder="勇者あきひさ"></div>
-        <div><label>ニックネーム</label><input type="text" id="p-nick" placeholder="伝説の主導者"></div>
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
+            <div><label>名前</label><input type="text" id="p-name" placeholder="例：あきひさ"></div>
+            <div><label>ニックネーム</label><input type="text" id="p-nick" placeholder="例：伝説のエンジニア"></div>
+        </div>
         
-        <div style="display:flex; gap:10px;">
-            <div style="flex:1;"><label>性別</label>
-                <select id="p-gender"><option>男</option><option>女</option><option>不明</option></select>
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
+            <div><label>性別</label>
+                <select id="p-gender"><option>男</option><option>女</option><option>その他</option></select>
             </div>
-            <div style="flex:1;"><label>年齢</label><input type="number" id="p-age" value="20"></div>
+            <div><label>年齢</label><input type="number" id="p-age" value="25"></div>
         </div>
 
-        <div><label>プロフィール（自己紹介）</label>
-            <textarea id="p-bio" rows="4" placeholder="ジョーシンやパソコン工房で鍛えた技術を持つ冒険者。"></textarea>
+        <div><label>自己紹介・冒険の目的</label>
+            <textarea id="p-bio" rows="5" placeholder="ジョーシンやパソコン工房の知識を武器に戦う。"></textarea>
         </div>
 
-        <button class="btn" onclick="saveData()">設定を保存する</button>
-        <p id="msg" style="color:#238636; font-size:12px; text-align:center;"></p>
+        <button class="btn" onclick="saveData()">この内容で保存する</button>
+        <div id="msg" class="msg"></div>
     </div>
 </div>
 
@@ -68,28 +76,32 @@
     const img = document.getElementById('view-img');
     const xRange = document.getElementById('x-range');
 
+    // スライダーの最大値を画像の横幅に合わせて自動調整する
+    img.onload = function() {
+        // 枠のサイズ(128)を引いた分がスライドできる最大値
+        const maxScroll = img.naturalWidth - 128; 
+        xRange.max = maxScroll > 0 ? maxScroll : 0;
+    };
+
     // 端末から画像を読み込む
     function loadFile(event) {
         const file = event.target.files[0];
+        if (!file) return;
         const reader = new FileReader();
         reader.onload = function(e) {
             img.src = e.target.result;
-            img.style.width = "100%"; // 読み込んだ画像は枠に合わせる
             img.style.left = "0";
-            img.style.height = "auto";
-            xRange.disabled = true; // 自作画像の場合はスライダー無効
+            xRange.value = 0;
         };
         reader.readAsDataURL(file);
     }
 
-    // スライダーで画像を横にずらす（切り抜き範囲設定）
+    // スライダーで画像を横にずらす
     function moveIcon() {
-        // 画像の横幅を基準に、左にずらす量を決める
-        const offset = xRange.value;
-        img.style.left = `-${offset}px`;
+        img.style.left = "-" + xRange.value + "px";
     }
 
-    // 保存（ブラウザに一時記録）
+    // 保存（ローカルストレージ）
     function saveData() {
         const data = {
             name: document.getElementById('p-name').value,
@@ -100,13 +112,16 @@
             iconLeft: img.style.left,
             iconSrc: img.src
         };
-        localStorage.setItem('myRPG_Hero', JSON.stringify(data));
-        document.getElementById('msg').innerText = "ブラウザに保存しました！";
+        localStorage.setItem('HeroData_Backup', JSON.stringify(data));
+        
+        const msg = document.getElementById('msg');
+        msg.innerText = "✔ ブラウザに保存が完了しました！";
+        setTimeout(() => msg.innerText = "", 3000);
     }
 
-    // 読み込み
+    // ページ読み込み時に復元
     window.onload = function() {
-        const saved = localStorage.getItem('myRPG_Hero');
+        const saved = localStorage.getItem('HeroData_Backup');
         if(saved) {
             const d = JSON.parse(saved);
             document.getElementById('p-name').value = d.name;
@@ -116,8 +131,10 @@
             document.getElementById('p-bio').value = d.bio;
             img.src = d.iconSrc;
             img.style.left = d.iconLeft;
+            // スライダーの位置も復元
+            xRange.value = Math.abs(parseInt(d.iconLeft)) || 0;
         }
-    }
+    };
 </script>
 
 </body>
