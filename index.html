@@ -2,20 +2,19 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>Pixel Auto RPG - Logic Update</title>
+    <title>Pixel Auto RPG - Strategy Expert</title>
     <style>
-        /* 前回のスタイルを継承し、さらに操作感を向上 */
         body { background: #0d1117; color: #c9d1d9; font-family: 'Segoe UI', sans-serif; margin: 0; font-size: 13px; }
         .main-layout { display: grid; grid-template-columns: 240px 1fr 420px; gap: 15px; padding: 15px; height: 95vh; }
         .panel { background: #161b22; padding: 15px; border-radius: 8px; border: 1px solid #30363d; overflow-y: auto; }
-        .slot { display: flex; align-items: center; gap: 10px; padding: 10px; margin-bottom: 10px; background: #21262d; border: 2px solid transparent; cursor: pointer; border-radius: 6px; }
+        .slot { display: flex; align-items: center; gap: 10px; padding: 10px; margin-bottom: 8px; background: #21262d; border: 2px solid transparent; cursor: pointer; border-radius: 6px; }
         .slot.active { border-color: #58a6ff; background: #0d1117; }
-        .job-card { border: 1px solid #30363d; padding: 8px; text-align: center; cursor: pointer; border-radius: 5px; background: #21262d; }
+        .job-card { border: 1px solid #30363d; padding: 8px; text-align: center; cursor: pointer; border-radius: 5px; background: #21262d; font-size: 10px; }
         .job-card.selected { background: #238636; border-color: #7ee787; font-weight: bold; }
-        .gambit-row { display: grid; grid-template-columns: 25px 1.4fr 1.2fr; gap: 5px; margin-bottom: 8px; align-items: center; }
-        select { background: #0d1117; color: #c9d1d9; border: 1px solid #30363d; padding: 6px; border-radius: 4px; }
+        .gambit-row { display: grid; grid-template-columns: 25px 1.4fr 1.2fr; gap: 5px; margin-bottom: 6px; align-items: center; }
+        select { background: #0d1117; color: #c9d1d9; border: 1px solid #30363d; padding: 6px; border-radius: 4px; font-size: 11px; }
         .btn { width: 100%; padding: 12px; background: #238636; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; }
-        h3 { color: #58a6ff; border-bottom: 1px solid #30363d; padding-bottom: 5px; }
+        h3 { color: #58a6ff; border-bottom: 1px solid #30363d; padding-bottom: 5px; margin-top: 15px; }
     </style>
 </head>
 <body>
@@ -24,37 +23,45 @@
     <div class="panel">
         <h3>編成ユニット</h3>
         <div id="slots"></div>
-        <button class="btn" style="background:#8957e5; margin-top:20px;">作戦開始（公開準備）</button>
+        <button class="btn" style="background:#8957e5; margin-top:20px;">作戦開始（テスト実行）</button>
     </div>
 
     <div class="panel">
-        <div id="job-icon-disp" style="font-size:60px; text-align:center;">🛡️</div>
+        <div id="job-icon-disp" style="font-size:60px; text-align:center;">🎭</div>
         <h2 id="preview-info" style="text-align:center;">---</h2>
-        <h3>基本設定</h3>
-        <input type="text" id="name-in" placeholder="ユニット名" oninput="sync()" style="width:90%; padding:8px; margin-bottom:10px; background:#0d1117; color:white; border:1px solid #30363d;">
-        <h3>クラス選択</h3>
+        <h3>クラス選択 (全8種)</h3>
         <div id="job-list" style="display:grid; grid-template-columns:repeat(3,1fr); gap:5px;"></div>
+        <h3>装備</h3>
+        <div style="background:#0d1117; padding:10px; border-radius:5px; border:1px solid #30363d;">
+            <select id="wp-r" style="width:100%; margin-bottom:5px;"><option>熟練者の杖</option><option>呪われし鎌</option><option>銀の竪琴</option></select>
+            <select id="wp-l" style="width:100%;"></select>
+        </div>
     </div>
 
     <div class="panel">
         <h3>自動行動 (GAMBIT)</h3>
-        <p style="font-size:11px; color:#8b949e; margin-bottom:15px;">※ターゲットに合わせて使用可能スキルが自動変化します</p>
+        <p style="font-size:11px; color:#8b949e; margin-bottom:10px;">バフは味方に、デバフは敵に設定してください</p>
         <div id="gambit-container"></div>
-        <button class="btn" onclick="save()">設定を保存</button>
+        <button class="btn" onclick="save()">戦略を保存</button>
     </div>
 </div>
 
 <script>
     const jobData = {
-        "剣聖": { icon: "⚔️", skills: { atk: ["通常攻撃", "迅雷・一閃突き", "不動の虚空斬", "極光・天砕波"], buff: ["神速の構え"] }, dual: true },
-        "聖導師": { icon: "⚕️", skills: { atk: ["通常攻撃"], buff: ["ヒールオーラ", "浄化の風", "再起の福音", "防護の結界"] }, dual: false },
-        "重騎士": { icon: "🛡️", skills: { atk: ["通常攻撃", "渾身の盾打"], buff: ["鉄壁の構え", "献身の守護"] }, dual: false }
+        "剣聖": { icon: "⚔️", skills: { atk: ["通常攻撃", "迅雷・一閃突き", "不動の虚空斬"], buff: ["神速の構え"] }, dual: true },
+        "重騎士": { icon: "🛡️", skills: { atk: ["通常攻撃", "渾身の盾打"], buff: ["鉄壁の構え", "献身の守護"] }, dual: false },
+        "聖導師": { icon: "⚕️", skills: { atk: ["通常攻撃"], buff: ["ヒールオーラ", "浄化の風", "防護の結界"] }, dual: false },
+        "魔導師": { icon: "🔮", skills: { atk: ["通常攻撃", "紅蓮の劫火", "凍結の波動"], buff: ["魔力の集中"] }, dual: false },
+        "潜伏者": { icon: "👤", skills: { atk: ["通常攻撃", "毒蛇の牙"], buff: ["幻影の身代わり", "回避のステップ"] }, dual: true },
+        "狂戦士": { icon: "🪓", skills: { atk: ["通常攻撃", "荒れ狂う一撃"], buff: ["激昂の咆哮"] }, dual: false },
+        "呪術師": { icon: "💀", skills: { atk: ["通常攻撃", "衰弱の呪い", "鈍足の霧", "防壁崩し"], buff: ["闇のバリア"] }, dual: false },
+        "吟遊詩人": { icon: "🪕", skills: { atk: ["通常攻撃", "不協和音"], buff: ["戦士の行進曲", "俊足のララバイ", "守りの小夜曲"] }, dual: false }
     };
 
     let currentId = 0;
     let party = Array(6).fill(null).map((_, i) => ({
-        name: `Unit-${i+1}`, job: "重騎士", 
-        gambits: Array(10).fill(null).map(() => ({ target: "正面の敵", action: "通常攻撃" }))
+        name: `Unit-0${i+1}`, job: "重騎士", 
+        gambits: Array(10).fill(null).map(() => ({ target: "enemy", action: "通常攻撃" }))
     }));
 
     function init() {
@@ -74,8 +81,9 @@
                     <span>${i+1}</span>
                     <select id="target-${i}" onchange="updateActionList(${i})">
                         <option value="enemy">正面の敵</option>
-                        <option value="enemy">強敵（BOSS）</option>
-                        <option value="friend">弱っている味方</option>
+                        <option value="enemy">最も攻撃力が高い敵</option>
+                        <option value="friend">HP<50%の味方</option>
+                        <option value="friend">味方全員</option>
                         <option value="friend">自分自身</option>
                     </select>
                     <select id="action-${i}"></select>
@@ -90,17 +98,23 @@
         const targetVal = document.getElementById(`target-${rowIndex}`).value;
         const actionSel = document.getElementById(`action-${rowIndex}`);
         
-        // ターゲットが敵なら攻撃スキル、味方なら補助・回復スキルを表示
+        // 敵ターゲットなら攻撃・デバフ、味方ターゲットならバフ・回復を表示
         const availableSkills = (targetVal === "friend") ? jInfo.skills.buff : jInfo.skills.atk;
-        
         actionSel.innerHTML = availableSkills.map(s => `<option>${s}</option>`).join('');
     }
 
     function refresh() {
         const p = party[currentId];
-        document.getElementById('name-in').value = p.name;
+        const jInfo = jobData[p.job];
         document.getElementById('preview-info').innerText = `${p.name} / ${p.job}`;
-        document.getElementById('job-icon-disp').innerText = jobData[p.job].icon;
+        document.getElementById('job-icon-disp').innerText = jInfo.icon;
+
+        const lSel = document.getElementById('wp-l');
+        if(jInfo.dual) {
+            lSel.innerHTML = `<option>妖刀・村正</option><option>風切りの短剣</option>`;
+        } else {
+            lSel.innerHTML = `<option>聖騎士の盾</option><option>魔力の籠手</option>`;
+        }
 
         for(let i=0; i<10; i++) { updateActionList(i); }
 
@@ -112,12 +126,7 @@
             </div>`).join('');
     }
 
-    function sync() {
-        party[currentId].name = document.getElementById('name-in').value;
-        document.getElementById('preview-info').innerText = `${party[currentId].name} / ${party[currentId].job}`;
-    }
-
-    function save() { alert("設定を保存しました！noteの記事ネタが一つ増えましたね。"); }
+    function save() { alert("戦略的なバフ・デバフ設定を保存しました！"); }
 
     init();
 </script>
