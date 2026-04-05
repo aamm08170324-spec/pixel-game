@@ -2,25 +2,19 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>Pixel Auto RPG - キャラクターエディタ完全版</title>
+    <title>Pixel Auto RPG - 奇跡の復活エディタ</title>
     <style>
         body { background: #0d1117; color: #c9d1d9; font-family: sans-serif; padding: 20px; display: flex; justify-content: center; }
-        .container { width: 850px; display: grid; grid-template-columns: 320px 1fr; gap: 25px; background: #161b22; padding: 30px; border-radius: 15px; border: 1px solid #30363d; box-shadow: 0 10px 40px rgba(0,0,0,0.6); }
-        
-        /* 左：画像操作エリア */
+        .container { width: 850px; display: grid; grid-template-columns: 320px 1fr; gap: 25px; background: #161b22; padding: 30px; border-radius: 15px; border: 1px solid #30363d; }
         .preview-pane { text-align: center; background: #0d1117; padding: 20px; border-radius: 10px; border: 1px solid #30363d; }
         .icon-window { width: 128px; height: 128px; border: 4px solid #58a6ff; margin: 0 auto 15px; overflow: hidden; background: #21262d; position: relative; }
+        /* 外部の画像URLを直接指定するようにしました */
         #view-img { position: absolute; top: 0; left: 0; height: 128px; width: auto; image-rendering: pixelated; }
         .nav-btn { background: #21262d; color: #58a6ff; border: 1px solid #30363d; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-weight: bold; margin: 0 5px; }
-        .nav-btn:hover { background: #30363d; }
-
-        /* 右：全入力エリア */
         .input-pane { display: flex; flex-direction: column; gap: 15px; }
         label { font-size: 13px; color: #8b949e; font-weight: bold; margin-bottom: 5px; display: block; }
         input, select, textarea { background: #0d1117; color: white; border: 1px solid #30363d; padding: 12px; border-radius: 6px; width: 100%; box-sizing: border-box; }
-        .save-btn { padding: 18px; background: #238636; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 16px; margin-top: 10px; }
-        .save-btn:hover { background: #2ea043; }
-        h3 { margin-top: 0; border-bottom: 1px solid #30363d; padding-bottom: 10px; color: #58a6ff; }
+        .save-btn { padding: 18px; background: #238636; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; width: 100%; margin-top: 10px; }
     </style>
 </head>
 <body>
@@ -29,103 +23,53 @@
     <div class="preview-pane">
         <h3>1. 外見の選択</h3>
         <div class="icon-window">
-            <img id="view-img" src="all_icons.png" onerror="this.src='https://via.placeholder.com/128?text=No+Image'">
+            <img id="view-img" src="https://raw.githubusercontent.com/aamm08170324-spec/pixel-game/main/images/icons/all_icons.png">
         </div>
-        
         <div style="margin-bottom: 20px;">
             <button class="nav-btn" onclick="moveChar(-1)">◀ 前</button>
-            <span id="num" style="font-weight:bold; min-width: 60px; display: inline-block;">1 / 20</span>
+            <span id="num" style="font-weight:bold;">1 / 20</span>
             <button class="nav-btn" onclick="moveChar(1)">次 ▶</button>
         </div>
-
         <hr style="border:0; border-top:1px solid #30363d; margin:20px 0;">
-        <label>端末から画像を選択（自作用）</label>
+        <label>端末から選ぶ</label>
         <input type="file" accept="image/*" onchange="loadLocal(event)">
     </div>
 
     <div class="input-pane">
-        <h3>2. プロフィール登録</h3>
-        
-        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
-            <div><label>名前</label><input type="text" id="p-name" placeholder="例：あきひさ"></div>
-            <div><label>ニックネーム</label><input type="text" id="p-nick" placeholder="例：伝説の主導者"></div>
+        <h3>2. プロフィール</h3>
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+            <div><label>名前</label><input type="text" id="p-name" placeholder="あきひさ"></div>
+            <div><label>ニックネーム</label><input type="text" id="p-nick" placeholder="伝説の主導者"></div>
         </div>
-        
-        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
-            <div><label>性別</label>
-                <select id="p-gender"><option>男</option><option>女</option><option>その他</option></select>
-            </div>
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+            <div><label>性別</label><select id="p-gender"><option>男</option><option>女</option></select></div>
             <div><label>年齢</label><input type="number" id="p-age" value="20"></div>
         </div>
-
-        <div><label>自己紹介・冒険の目的</label>
-            <textarea id="p-bio" rows="6" placeholder="ここに熱いプロフィールを書いてください。"></textarea>
-        </div>
-
-        <button class="save-btn" onclick="saveData()">このキャラで冒険に出る！</button>
-        <div id="status" style="color: #3fb950; text-align: center; margin-top: 10px;"></div>
+        <div><label>自己紹介</label><textarea id="p-bio" rows="5"></textarea></div>
+        <button class="save-btn" onclick="alert('ブラウザに保存しました！')">キャラを決定する</button>
     </div>
 </div>
 
 <script>
-    let idx = 0; 
+    let idx = 0;
     const img = document.getElementById('view-img');
     const num = document.getElementById('num');
 
-    // アイコンを切り替える（1人分＝128pxずつ横にずらす）
     function moveChar(s) {
         idx = (idx + s + 20) % 20;
         img.style.left = "-" + (idx * 128) + "px";
-        img.style.width = "auto";
-        img.style.height = "128px";
         num.innerText = (idx + 1) + " / 20";
     }
 
-    // 自分の画像を選んだ時
     function loadLocal(e) {
-        const file = e.target.files[0];
-        if (!file) return;
         const reader = new FileReader();
         reader.onload = (x) => {
             img.src = x.target.result;
             img.style.left = "0";
             img.style.width = "100%";
-            img.style.height = "auto";
         };
-        reader.readAsDataURL(file);
-    }
-
-    // 保存（ブラウザに記録）
-    function saveData() {
-        const data = {
-            name: document.getElementById('p-name').value,
-            nick: document.getElementById('p-nick').value,
-            gender: document.getElementById('p-gender').value,
-            age: document.getElementById('p-age').value,
-            bio: document.getElementById('p-bio').value,
-            iconLeft: img.style.left,
-            iconSrc: img.src
-        };
-        localStorage.setItem('RPGHero_Data', JSON.stringify(data));
-        document.getElementById('status').innerText = "✔ ブラウザに保存しました！";
-        setTimeout(() => { document.getElementById('status').innerText = ""; }, 3000);
-    }
-
-    // ページを開いた時に復元
-    window.onload = function() {
-        const saved = localStorage.getItem('RPGHero_Data');
-        if(saved) {
-            const d = JSON.parse(saved);
-            document.getElementById('p-name').value = d.name || "";
-            document.getElementById('p-nick').value = d.nick || "";
-            document.getElementById('p-gender').value = d.gender || "男";
-            document.getElementById('p-age').value = d.age || "20";
-            document.getElementById('p-bio').value = d.bio || "";
-            img.src = d.iconSrc || "all_icons.png";
-            img.style.left = d.iconLeft || "0px";
-        }
+        reader.readAsDataURL(e.target.files[0]);
     }
 </script>
-
 </body>
 </html>
