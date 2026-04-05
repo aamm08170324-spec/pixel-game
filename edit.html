@@ -2,101 +2,89 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>Pixel Auto RPG - キャラクターエディタ</title>
+    <title>Pixel Auto RPG - 完全版エディタ</title>
     <style>
         body { background: #0d1117; color: #c9d1d9; font-family: sans-serif; padding: 20px; display: flex; justify-content: center; }
-        .container { width: 850px; display: grid; grid-template-columns: 350px 1fr; gap: 25px; background: #161b22; padding: 30px; border-radius: 15px; border: 1px solid #30363d; box-shadow: 0 10px 40px rgba(0,0,0,0.6); }
+        .container { width: 850px; display: grid; grid-template-columns: 320px 1fr; gap: 25px; background: #161b22; padding: 30px; border-radius: 15px; border: 1px solid #30363d; box-shadow: 0 10px 40px rgba(0,0,0,0.6); }
         
-        /* 左：画像選択エリア */
+        /* 左：画像操作エリア */
         .preview-pane { text-align: center; background: #0d1117; padding: 20px; border-radius: 10px; border: 1px solid #30363d; }
-        .icon-display { width: 128px; height: 128px; border: 4px solid #58a6ff; margin: 0 auto 15px; overflow: hidden; background: #21262d; position: relative; }
+        .icon-window { width: 128px; height: 128px; border: 4px solid #58a6ff; margin: 0 auto 15px; overflow: hidden; background: #21262d; position: relative; }
         #view-img { position: absolute; top: 0; left: 0; height: 128px; width: auto; image-rendering: pixelated; }
+        .nav-btn { background: #21262d; color: #58a6ff; border: 1px solid #30363d; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-weight: bold; margin: 0 5px; }
 
-        .nav-btns { display: flex; justify-content: center; gap: 10px; margin-bottom: 20px; }
-        .nav-btn { background: #21262d; color: #58a6ff; border: 1px solid #30363d; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-weight: bold; }
-
-        /* 右：全項目入力エリア */
+        /* 右：全入力エリア */
         .input-pane { display: flex; flex-direction: column; gap: 15px; }
         label { font-size: 13px; color: #8b949e; font-weight: bold; margin-bottom: 5px; display: block; }
         input, select, textarea { background: #0d1117; color: white; border: 1px solid #30363d; padding: 12px; border-radius: 6px; width: 100%; box-sizing: border-box; }
-        
         .save-btn { padding: 15px; background: #238636; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 16px; margin-top: 10px; }
-        .save-btn:hover { background: #2ea043; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <div class="preview-pane">
-        <h3>1. 見た目を選ぶ</h3>
-        <div class="icon-display">
+        <h3>外見の選択</h3>
+        <div class="icon-window">
             <img id="view-img" src="all_icons.png">
         </div>
         
-        <div class="nav-btns">
-            <button class="nav-btn" onclick="changeChar(-1)">◀ 前へ</button>
-            <span id="char-num" style="line-height:35px; font-weight:bold;">1 / 20</span>
-            <button class="nav-btn" onclick="changeChar(1)">次へ ▶</button>
+        <div style="margin-bottom: 20px;">
+            <button class="nav-btn" onclick="moveChar(-1)">◀ 前</button>
+            <span id="num" style="font-weight:bold;">1 / 20</span>
+            <button class="nav-btn" onclick="moveChar(1)">次 ▶</button>
         </div>
 
         <hr style="border:0; border-top:1px solid #30363d; margin:20px 0;">
-        <label>自分の画像を使う</label>
-        <input type="file" accept="image/*" onchange="loadCustomFile(event)">
+        <label>端末から画像を選択</label>
+        <input type="file" accept="image/*" onchange="loadLocal(event)">
     </div>
 
     <div class="input-pane">
-        <h3>2. プロフィール登録</h3>
+        <h3>プロフィール登録</h3>
         
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
-            <div><label>名前</label><input type="text" id="p-name" placeholder="例：あきひさ"></div>
-            <div><label>ニックネーム</label><input type="text" id="p-nick" placeholder="例：伝説の主導者"></div>
+            <div><label>名前</label><input type="text" id="p-name" placeholder="勇者あきひさ"></div>
+            <div><label>ニックネーム</label><input type="text" id="p-nick" placeholder="伝説の主導者"></div>
         </div>
         
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px;">
-            <div><label>性別</label>
-                <select id="p-gender"><option>男</option><option>女</option><option>その他</option></select>
-            </div>
+            <div><label>性別</label><select id="p-gender"><option>男</option><option>女</option><option>その他</option></select></div>
             <div><label>年齢</label><input type="number" id="p-age" value="20"></div>
         </div>
 
         <div><label>自己紹介・冒険の目的</label>
-            <textarea id="p-bio" rows="5" placeholder="ここに熱いプロフィールを書いてください。"></textarea>
+            <textarea id="p-bio" rows="5" placeholder="ここにプロフィールを書いてください。"></textarea>
         </div>
 
-        <button class="save-btn" onclick="saveData()">このキャラで決定！</button>
+        <button class="save-btn" onclick="alert('設定を保存しました！')">このキャラで決定！</button>
     </div>
 </div>
 
 <script>
-    let currentIdx = 0; 
+    let idx = 0; 
     const img = document.getElementById('view-img');
-    const charNum = document.getElementById('char-num');
+    const num = document.getElementById('num');
 
-    // アイコンをポチポチ切り替える機能
-    function changeChar(step) {
-        currentIdx = (currentIdx + step + 20) % 20;
-        img.style.left = "-" + (currentIdx * 128) + "px";
+    // 20人をポチポチ切り替える（128pxずつずらす）
+    function moveChar(s) {
+        idx = (idx + s + 20) % 20;
+        img.style.left = "-" + (idx * 128) + "px";
         img.style.width = "auto";
         img.style.height = "128px";
-        charNum.innerText = (currentIdx + 1) + " / 20";
+        num.innerText = (idx + 1) + " / 20";
     }
 
-    // 自分の画像を選んだ時の機能
-    function loadCustomFile(event) {
-        const file = event.target.files[0];
+    // 自分の画像を選ぶ
+    function loadLocal(e) {
         const reader = new FileReader();
-        reader.onload = (e) => {
-            img.src = e.target.result;
+        reader.onload = (x) => {
+            img.src = x.target.result;
             img.style.left = "0";
             img.style.width = "100%";
             img.style.height = "auto";
         };
-        reader.readAsDataURL(file);
-    }
-
-    // 保存機能
-    function saveData() {
-        alert("キャラクターをブラウザに保存しました！");
+        reader.readAsDataURL(e.target.files[0]);
     }
 </script>
 
